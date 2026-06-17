@@ -1,0 +1,2 @@
+"""Deterministic Redrob candidate ranker."""
+
