@@ -2,7 +2,7 @@
 
 ## Team Name
 
-TBD
+AllKnighters
 
 ## Problem Statement
 
@@ -136,7 +136,7 @@ flowchart LR
 ## Results And Performance
 
 - Unit tests: 23 passing.
-- Full dataset runtime with debug and audit outputs: 251.27 seconds on local CPU.
+- Full dataset runtime with debug and audit outputs: 111.27 seconds on local CPU.
 - Official validation: `Submission is valid.`
 - Output: exactly 100 ranked candidates with factual reasoning.
 

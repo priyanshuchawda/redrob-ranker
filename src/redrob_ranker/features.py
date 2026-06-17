@@ -166,15 +166,23 @@ def extract_features(candidate: Mapping, reference_date: date | None = None) -> 
     country = str(profile.get("country", ""))
     years = _as_float(profile.get("years_of_experience", 0.0))
     career_text = _career_text(history)
+    profile_text = _profile_text(profile)
 
     skill_names = tuple(str(skill.get("name", "")) for skill in skills if skill.get("name"))
     relevant_skills = tuple(sorted(name for name in skill_names if name in RELEVANT_SKILLS))
-    matched_evidence = _matched_phrases(career_text)
+    matched_evidence = _matched_phrases(career_text, profile_text)
 
     role_score = _role_score(current_title)
     retrieval_evidence = _count_phrases(career_text, RETRIEVAL_PHRASES)
     ranking_evidence = _count_phrases(career_text, RANKING_PHRASES)
     evaluation_evidence = _count_phrases(career_text, EVALUATION_PHRASES)
+    profile_retrieval_evidence = _count_phrases(profile_text, RETRIEVAL_PHRASES)
+    profile_ranking_evidence = _count_phrases(profile_text, RANKING_PHRASES)
+    profile_evaluation_evidence = _count_phrases(profile_text, EVALUATION_PHRASES)
+    career_evidence_score = float(retrieval_evidence + ranking_evidence + evaluation_evidence)
+    profile_evidence_score = 0.5 * float(
+        profile_retrieval_evidence + profile_ranking_evidence + profile_evaluation_evidence
+    )
     product_months = _product_company_months(history)
     seniority_score = _seniority_score(years)
     availability_score, availability_flags = _availability_score(signals, reference_date)
@@ -186,6 +194,7 @@ def extract_features(candidate: Mapping, reference_date: date | None = None) -> 
         skills=skills,
     )
     career_evidence = retrieval_evidence + ranking_evidence + evaluation_evidence
+    skill_trust_score = _skill_trust_score(skills, signals, career_evidence)
     domain_flags = _domain_focus_flags(profile, history, career_evidence)
     generic_ai_flags = _generic_ai_flags(profile, history, skills, career_evidence)
     risk_flags = [*availability_flags, *logistics_flags, *keyword_flags, *domain_flags, *generic_ai_flags]
@@ -202,8 +211,14 @@ def extract_features(candidate: Mapping, reference_date: date | None = None) -> 
         retrieval_evidence=retrieval_evidence,
         ranking_evidence=ranking_evidence,
         evaluation_evidence=evaluation_evidence,
+        profile_retrieval_evidence=profile_retrieval_evidence,
+        profile_ranking_evidence=profile_ranking_evidence,
+        profile_evaluation_evidence=profile_evaluation_evidence,
+        career_evidence_score=career_evidence_score,
+        profile_evidence_score=profile_evidence_score,
         product_company_months=product_months,
         relevant_skill_count=len(relevant_skills),
+        skill_trust_score=round(skill_trust_score, 6),
         relevant_skills=relevant_skills,
         evidence_phrases=matched_evidence,
         availability_score=availability_score,
@@ -222,13 +237,41 @@ def _career_text(history: Iterable[Mapping]) -> str:
     return " ".join(chunks).lower()
 
 
+def _profile_text(profile: Mapping) -> str:
+    return " ".join(
+        [
+            str(profile.get("headline", "")),
+            str(profile.get("summary", "")),
+            str(profile.get("current_title", "")),
+        ]
+    ).lower()
+
+
 def _count_phrases(text: str, phrases: Iterable[str]) -> int:
-    return sum(1 for phrase in phrases if phrase in text)
+    return sum(1 for phrase in phrases if _has_phrase(text, phrase))
 
 
-def _matched_phrases(text: str) -> tuple[str, ...]:
+def _matched_phrases(career_text: str, profile_text: str) -> tuple[str, ...]:
     phrases = [*RETRIEVAL_PHRASES, *RANKING_PHRASES, *EVALUATION_PHRASES]
-    return tuple(phrase for phrase in phrases if phrase in text)
+    return tuple(
+        phrase
+        for phrase in phrases
+        if _has_phrase(career_text, phrase) or _has_phrase(profile_text, phrase)
+    )
+
+
+def _has_phrase(text: str, phrase: str) -> bool:
+    phrase = phrase.lower()
+    start = text.find(phrase)
+    while start != -1:
+        before = start - 1
+        after = start + len(phrase)
+        has_left_boundary = before < 0 or not text[before].isalnum()
+        has_right_boundary = after >= len(text) or not text[after].isalnum()
+        if has_left_boundary and has_right_boundary:
+            return True
+        start = text.find(phrase, start + 1)
+    return False
 
 
 def _role_score(title: str) -> float:
@@ -239,6 +282,23 @@ def _role_score(title: str) -> float:
         return -1.0
     if any(term in text for term in ("marketing", "sales", "hr", "accountant", "graphic", "content")):
         return -4.0
+    if any(
+        term in text
+        for term in (
+            "founding ai engineer",
+            "founding machine learning engineer",
+            "staff ai engineer",
+            "principal ai engineer",
+            "relevance engineer",
+            "search relevance engineer",
+            "ranking engineer",
+            "recommendation engineer",
+            "machine learning scientist",
+        )
+    ):
+        return 6.5
+    if any(term in text for term in ("ml platform engineer", "applied ai engineer")):
+        return 5.8
     if any(term in text for term in ("staff machine learning", "lead ai", "senior ai", "senior machine learning")):
         return 6.5
     if any(term in text for term in ("recommendation systems", "search engineer", "applied scientist")):
@@ -375,6 +435,65 @@ def _keyword_risk(
     if keyword_risk:
         flags.append("keyword-stuffed profile")
     return keyword_risk, flags
+
+
+def _skill_trust_score(skills: Iterable[Mapping], signals: Mapping, career_evidence: int) -> float:
+    assessment_scores = signals.get("skill_assessment_scores", {})
+    total = 0.0
+    relevant_count = 0
+    buzzword_count = 0
+    for skill in skills:
+        name = str(skill.get("name", ""))
+        if name not in RELEVANT_SKILLS:
+            continue
+        relevant_count += 1
+        score = 1.0
+        duration = int(skill.get("duration_months") or 0)
+        proficiency = str(skill.get("proficiency", ""))
+        endorsements = int(skill.get("endorsements") or 0)
+
+        if duration >= 24:
+            score += 0.8
+        elif duration >= 12:
+            score += 0.5
+        elif duration <= 6:
+            score -= 0.5
+
+        if proficiency == "expert":
+            score += 0.7
+        elif proficiency == "advanced":
+            score += 0.45
+        elif proficiency == "beginner":
+            score -= 0.25
+
+        if endorsements >= 20:
+            score += 0.3
+        elif endorsements >= 10:
+            score += 0.15
+
+        assessment = _as_float(assessment_scores.get(name, 0.0)) if isinstance(assessment_scores, Mapping) else 0.0
+        if assessment >= 85:
+            score += 0.8
+        elif assessment >= 70:
+            score += 0.5
+
+        if career_evidence >= 8:
+            score += 0.7
+        elif career_evidence >= 4:
+            score += 0.35
+
+        if name in {"LLMs", "RAG", "Pinecone", "Qdrant", "Weaviate", "Vector Search", "Fine-tuning LLMs"}:
+            buzzword_count += 1
+            if career_evidence < 4:
+                score -= 1.0
+
+        total += max(score, 0.0)
+
+    if buzzword_count >= 4 and career_evidence < 4:
+        total *= 0.55
+    if relevant_count >= 8 and career_evidence < 4:
+        total *= 0.7
+    return total
 
 
 def _risk_penalty(

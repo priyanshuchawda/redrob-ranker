@@ -9,8 +9,11 @@ from tests.fixtures import (
     generic_ai_keyword_candidate,
     outside_india_candidate,
     plain_language_matching_candidate,
+    profile_only_evidence_candidate,
+    roadmap_candidate,
     semantic_matching_candidate,
     stale_candidate,
+    trusted_skill_candidate,
 )
 
 
@@ -93,3 +96,52 @@ def test_detects_generic_ai_without_shipped_retrieval_evidence() -> None:
 
     assert "generic AI without shipped retrieval evidence" in features.risk_flags
     assert features.risk_penalty >= 15.0
+
+
+def test_extracts_profile_evidence_at_lower_trust_than_career_evidence() -> None:
+    profile_only = extract_features(profile_only_evidence_candidate(), reference_date=date(2026, 6, 17))
+    career_backed = extract_features(semantic_matching_candidate(), reference_date=date(2026, 6, 17))
+
+    assert profile_only.profile_retrieval_evidence >= 3
+    assert profile_only.profile_ranking_evidence >= 2
+    assert profile_only.profile_evaluation_evidence >= 1
+    assert profile_only.retrieval_evidence == 0
+    assert profile_only.profile_evidence_score > 0
+    assert profile_only.profile_evidence_score < career_backed.career_evidence_score
+
+
+def test_short_metric_phrases_use_word_boundaries() -> None:
+    features = extract_features(roadmap_candidate(), reference_date=date(2026, 6, 17))
+
+    assert "map" not in features.evidence_phrases
+    assert features.evaluation_evidence == 0
+
+
+def test_expanded_senior_ai_titles_score_as_strong_role_fit() -> None:
+    for title in [
+        "Founding AI Engineer",
+        "Founding Machine Learning Engineer",
+        "Staff AI Engineer",
+        "Principal AI Engineer",
+        "Relevance Engineer",
+        "Search Relevance Engineer",
+        "Ranking Engineer",
+        "Recommendation Engineer",
+        "ML Platform Engineer",
+        "Applied AI Engineer",
+        "Machine Learning Scientist",
+    ]:
+        candidate = semantic_matching_candidate()
+        candidate["profile"]["current_title"] = title
+
+        features = extract_features(candidate, reference_date=date(2026, 6, 17))
+
+        assert features.role_score >= 5.5, title
+
+
+def test_skill_trust_rewards_duration_assessments_and_career_support() -> None:
+    trusted = extract_features(trusted_skill_candidate(), reference_date=date(2026, 6, 17))
+    generic = extract_features(generic_ai_keyword_candidate(), reference_date=date(2026, 6, 17))
+
+    assert trusted.skill_trust_score > trusted.relevant_skill_count
+    assert trusted.skill_trust_score > generic.skill_trust_score + 6

@@ -15,8 +15,14 @@ class CandidateFeatures:
     retrieval_evidence: int
     ranking_evidence: int
     evaluation_evidence: int
+    profile_retrieval_evidence: int
+    profile_ranking_evidence: int
+    profile_evaluation_evidence: int
+    career_evidence_score: float
+    profile_evidence_score: float
     product_company_months: int
     relevant_skill_count: int
+    skill_trust_score: float
     relevant_skills: tuple[str, ...]
     evidence_phrases: tuple[str, ...]
     availability_score: float
@@ -33,6 +39,7 @@ class ScoreComponents:
     retrieval: float
     ranking: float
     evaluation: float
+    profile_evidence: float
     skills: float
     product: float
     availability: float

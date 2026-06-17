@@ -28,7 +28,7 @@ Validate the generated file with the challenge validator:
 python "..\\[PUB] India_runs_data_and_ai_challenge\\India_runs_data_and_ai_challenge\\validate_submission.py" submission.csv
 ```
 
-On the development machine, the full 100K-candidate run with debug and audit outputs completed in 251.27 seconds on CPU.
+On the development machine, the full 100K-candidate run with debug and audit outputs completed in 111.27 seconds on CPU.
 
 ## Tests
 

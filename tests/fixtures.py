@@ -341,3 +341,46 @@ def generic_ai_keyword_candidate(candidate_id: str = "CAND_0000009") -> dict:
         {"name": "Python", "proficiency": "intermediate", "endorsements": 8, "duration_months": 12},
     ]
     return candidate
+
+
+def profile_only_evidence_candidate(candidate_id: str = "CAND_0000010") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["profile"].update(
+        {
+            "headline": "Senior AI Engineer for hybrid search and ranking",
+            "summary": (
+                "Owned semantic search, candidate matching, learning-to-rank, "
+                "cross encoder reranking, NDCG evaluation, and recruiter engagement metrics."
+            ),
+        }
+    )
+    candidate["career_history"][0]["description"] = "Built Python services for product teams."
+    candidate["career_history"][1]["description"] = "Built data pipelines and model APIs."
+    return candidate
+
+
+def roadmap_candidate(candidate_id: str = "CAND_0000011") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["profile"]["summary"] = "Owned the product roadmap for a platform team."
+    candidate["career_history"][0]["description"] = (
+        "Owned the product roadmap and stakeholder planning. No ranking metrics were used."
+    )
+    candidate["career_history"][1]["description"] = "Managed releases and documentation."
+    candidate["skills"] = [{"name": "Python", "proficiency": "intermediate", "endorsements": 2, "duration_months": 8}]
+    return candidate
+
+
+def trusted_skill_candidate(candidate_id: str = "CAND_0000012") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["skills"] = [
+        {"name": "Python", "proficiency": "expert", "endorsements": 42, "duration_months": 72},
+        {"name": "Vector Search", "proficiency": "advanced", "endorsements": 25, "duration_months": 30},
+        {"name": "Learning to Rank", "proficiency": "advanced", "endorsements": 22, "duration_months": 28},
+        {"name": "Cross Encoder", "proficiency": "advanced", "endorsements": 18, "duration_months": 18},
+    ]
+    candidate["redrob_signals"]["skill_assessment_scores"] = {
+        "Python": 92.0,
+        "Vector Search": 88.0,
+        "Learning to Rank": 84.0,
+    }
+    return candidate

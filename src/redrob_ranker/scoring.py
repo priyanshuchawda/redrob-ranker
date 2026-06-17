@@ -26,18 +26,32 @@ def score_components(features: CandidateFeatures) -> ScoreComponents:
     retrieval = min(features.retrieval_evidence, 8) * 3.0
     ranking = min(features.ranking_evidence, 6) * 3.0
     evaluation = min(features.evaluation_evidence, 5) * 2.2
-    skills = min(features.relevant_skill_count, 10) * 1.2
+    profile_evidence = min(features.profile_evidence_score, 8.0) * 1.5
+    skills = min(features.skill_trust_score, 18.0) * 0.9
     product = min(features.product_company_months / 12.0, 9.0) * 1.4
     availability = features.availability_score * 2.2
     logistics = features.logistics_score * 2.0
     risk = features.risk_penalty
-    total = role + seniority + retrieval + ranking + evaluation + skills + product + availability + logistics - risk
+    total = (
+        role
+        + seniority
+        + retrieval
+        + ranking
+        + evaluation
+        + profile_evidence
+        + skills
+        + product
+        + availability
+        + logistics
+        - risk
+    )
     return ScoreComponents(
         role=round(role, 6),
         seniority=round(seniority, 6),
         retrieval=round(retrieval, 6),
         ranking=round(ranking, 6),
         evaluation=round(evaluation, 6),
+        profile_evidence=round(profile_evidence, 6),
         skills=round(skills, 6),
         product=round(product, 6),
         availability=round(availability, 6),

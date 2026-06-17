@@ -13,8 +13,10 @@ from tests.fixtures import (
     not_open_candidate,
     outside_india_candidate,
     plain_language_matching_candidate,
+    profile_only_evidence_candidate,
     semantic_matching_candidate,
     stale_candidate,
+    trusted_skill_candidate,
 )
 
 
@@ -132,3 +134,18 @@ def test_semantic_matching_candidate_beats_generic_ai_profile() -> None:
 
     assert semantic.score > generic_ai.score + 45
     assert "generic AI without shipped retrieval evidence" in generic_ai.features.risk_flags
+
+
+def test_career_backed_evidence_scores_above_profile_only_claims() -> None:
+    career_backed = score_candidate(semantic_matching_candidate(), reference_date=date(2026, 6, 17))
+    profile_only = score_candidate(profile_only_evidence_candidate(), reference_date=date(2026, 6, 17))
+
+    assert profile_only.components.profile_evidence > 0
+    assert career_backed.score > profile_only.score + 8
+
+
+def test_skill_component_uses_trust_score_not_raw_count_only() -> None:
+    trusted = score_candidate(trusted_skill_candidate(), reference_date=date(2026, 6, 17))
+    generic = score_candidate(generic_ai_keyword_candidate(), reference_date=date(2026, 6, 17))
+
+    assert trusted.components.skills > generic.components.skills

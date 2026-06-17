@@ -1,19 +1,19 @@
 # Copy to submission_metadata.yaml and fill private/team-specific fields before upload.
 
-team_name: "your-team-name"
+team_name: "AllKnighters"
 
 primary_contact:
-  name: "Full Name"
-  email: "primary@example.com"
-  phone: "+91-XXXXXXXXXX"
+  name: "PROVIDE_REAL_PRIMARY_CONTACT_NAME_BEFORE_UPLOAD"
+  email: "PROVIDE_REAL_PRIMARY_CONTACT_EMAIL_BEFORE_UPLOAD"
+  phone: "PROVIDE_REAL_PRIMARY_CONTACT_PHONE_BEFORE_UPLOAD"
 
 team_members:
-  - name: "Full Name"
-    email: "member@example.com"
+  - name: "PROVIDE_REAL_TEAM_MEMBER_NAME_BEFORE_UPLOAD"
+    email: "PROVIDE_REAL_TEAM_MEMBER_EMAIL_BEFORE_UPLOAD"
     role: "Team Lead"
 
 github_repo: "https://github.com/priyanshuchawda/redrob-ranker"
-sandbox_link: "TBD"
+sandbox_link: "PROVIDE_REAL_SANDBOX_LINK_BEFORE_UPLOAD"
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
 compute:
@@ -48,4 +48,3 @@ declarations:
   no_collusion: true
   honeypot_check_done: true
   reproduction_tested: true
-
