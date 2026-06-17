@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Challenge data and generated outputs
+candidates.jsonl
+candidates.jsonl.gz
+sample_candidates.json
+sample_submission.csv
+submission.csv
+*.csv
+!tests/fixtures/*.csv
+
+# Local metadata with private contact info
+submission_metadata.yaml
+
