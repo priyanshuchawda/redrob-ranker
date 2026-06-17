@@ -12,8 +12,9 @@ def generate_reasoning(scored: ScoredCandidate) -> str:
     strengths = [
         f"{features.current_title} with {features.years_of_experience:.1f} yrs",
     ]
-    if features.evidence_phrases:
-        strengths.append(f"evidence includes {_join_phrases(features.evidence_phrases[:3])}")
+    evidence = _display_evidence(features.evidence_phrases)
+    if evidence:
+        strengths.append(f"evidence includes {_join_phrases(evidence[:3])}")
     elif features.relevant_skills:
         strengths.append(f"skills include {_join_phrases(features.relevant_skills[:3])}")
 
@@ -54,3 +55,29 @@ def _join_phrases(items: tuple[str, ...] | list[str]) -> str:
         return f"{items[0]} and {items[1]}"
     return f"{', '.join(items[:-1])}, and {items[-1]}"
 
+
+def _display_evidence(phrases: tuple[str, ...]) -> tuple[str, ...]:
+    labels: list[str] = []
+    seen: set[str] = set()
+    for phrase in phrases:
+        label = _evidence_label(phrase)
+        key = label.lower()
+        if key in seen:
+            continue
+        labels.append(label)
+        seen.add(key)
+    return tuple(labels)
+
+
+def _evidence_label(phrase: str) -> str:
+    if phrase in {"embedding", "embeddings", "embeddings-based"}:
+        return "embeddings"
+    if phrase in {"a/b testing", "a/b test", "ab test"}:
+        return "A/B testing"
+    if phrase == "ndcg":
+        return "NDCG"
+    if phrase == "mrr":
+        return "MRR"
+    if phrase == "map":
+        return "MAP"
+    return phrase

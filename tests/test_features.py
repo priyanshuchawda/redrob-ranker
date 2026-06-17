@@ -39,3 +39,11 @@ def test_behavioral_availability_scores_recent_responsive_candidates_higher() ->
     assert stale.availability_score <= 3.0
     assert "stale profile" in stale.risk_flags
 
+
+def test_junior_ml_title_is_not_treated_as_senior_fit() -> None:
+    candidate = base_candidate()
+    candidate["profile"]["current_title"] = "Junior ML Engineer"
+
+    features = extract_features(candidate, reference_date=date(2026, 6, 17))
+
+    assert features.role_score <= 2.0

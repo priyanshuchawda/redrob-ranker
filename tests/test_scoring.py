@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 
 from redrob_ranker.reasoning import generate_reasoning
@@ -44,3 +45,16 @@ def test_reasoning_is_grounded_and_mentions_concerns() -> None:
     assert "response rate 0.05" in reasoning
     assert "concern" in reasoning.lower()
 
+
+def test_reasoning_deduplicates_embedding_phrases() -> None:
+    candidate = base_candidate()
+    candidate["career_history"][0]["description"] = (
+        "Shipped semantic search using embedding features, embeddings refreshes, "
+        "and recruiter-facing ranking."
+    )
+    candidate["career_history"][1]["description"] = "Built Python ML services."
+
+    scored = score_candidate(candidate, reference_date=date(2026, 6, 17))
+    reasoning = generate_reasoning(scored)
+
+    assert not (re.search(r"\bembedding\b", reasoning) and re.search(r"\bembeddings\b", reasoning))

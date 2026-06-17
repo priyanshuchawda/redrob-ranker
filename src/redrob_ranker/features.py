@@ -183,6 +183,10 @@ def _matched_phrases(text: str) -> tuple[str, ...]:
 
 def _role_score(title: str) -> float:
     text = title.lower()
+    if "junior" in text:
+        if any(term in text for term in ("ml", "machine learning", "ai", "nlp", "search")):
+            return 1.5
+        return -1.0
     if any(term in text for term in ("marketing", "sales", "hr", "accountant", "graphic", "content")):
         return -4.0
     if any(term in text for term in ("staff machine learning", "lead ai", "senior ai", "senior machine learning")):
@@ -372,4 +376,3 @@ def _as_float(value: object) -> float:
     if math.isnan(number) or math.isinf(number):
         return 0.0
     return number
-
