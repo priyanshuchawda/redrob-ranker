@@ -71,6 +71,9 @@ RELEVANT_SKILLS = {
     "Semantic Search",
     "TensorFlow",
     "Text Encoders",
+    "Two-Tower Models",
+    "Cross Encoder",
+    "Reranking",
     "Vector Search",
     "Weaviate",
     "XGBoost",
@@ -98,6 +101,17 @@ RETRIEVAL_PHRASES = (
     "surface",
     "user intent",
     "relevance",
+    "candidate matching",
+    "talent matching",
+    "job matching",
+    "entity matching",
+    "profile matching",
+    "candidate generation",
+    "recall stage",
+    "search relevance",
+    "two-tower",
+    "two tower",
+    "retrieval evaluation",
 )
 
 RANKING_PHRASES = (
@@ -113,6 +127,13 @@ RANKING_PHRASES = (
     "explicit modeling",
     "hand-tuned heuristic",
     "heuristic system",
+    "learning-to-rank",
+    "ranking model",
+    "reranker",
+    "reranking",
+    "cross encoder",
+    "precision stage",
+    "candidate recommendation",
 )
 
 EVALUATION_PHRASES = (
@@ -129,6 +150,7 @@ EVALUATION_PHRASES = (
     "online engagement",
     "offline metrics",
     "recruiter engagement",
+    "retrieval evaluation",
 )
 
 
@@ -163,8 +185,10 @@ def extract_features(candidate: Mapping, reference_date: date | None = None) -> 
         relevant_skill_count=len(relevant_skills),
         skills=skills,
     )
-    domain_flags = _domain_focus_flags(profile, history, retrieval_evidence + ranking_evidence + evaluation_evidence)
-    risk_flags = [*availability_flags, *logistics_flags, *keyword_flags, *domain_flags]
+    career_evidence = retrieval_evidence + ranking_evidence + evaluation_evidence
+    domain_flags = _domain_focus_flags(profile, history, career_evidence)
+    generic_ai_flags = _generic_ai_flags(profile, history, skills, career_evidence)
+    risk_flags = [*availability_flags, *logistics_flags, *keyword_flags, *domain_flags, *generic_ai_flags]
     risk_penalty = _risk_penalty(profile, history, signals, risk_flags, keyword_risk)
 
     return CandidateFeatures(
@@ -381,6 +405,8 @@ def _risk_penalty(
         penalty += 6.0
     if "non-target ML domain" in risk_flags:
         penalty += 12.0
+    if "generic AI without shipped retrieval evidence" in risk_flags:
+        penalty += 18.0
     if _as_float(signals.get("github_activity_score", 0.0)) == -1:
         penalty += 0.5
     return penalty
@@ -415,6 +441,39 @@ def _domain_focus_flags(profile: Mapping, history: Iterable[Mapping], target_evi
         and target_evidence <= 2
     ):
         return ["non-target ML domain"]
+    return []
+
+
+def _generic_ai_flags(
+    profile: Mapping,
+    history: Iterable[Mapping],
+    skills: Iterable[Mapping],
+    target_evidence: int,
+) -> list[str]:
+    text = " ".join(
+        [
+            str(profile.get("headline", "")),
+            str(profile.get("summary", "")),
+            _career_text(history),
+            " ".join(str(skill.get("name", "")) for skill in skills),
+        ]
+    ).lower()
+    generic_terms = ("langchain", "openai", "prompt engineering", "rag template", "tutorial")
+    demo_terms = ("demo", "demos", "proof-of-concept", "proof of concept", "poc", "template", "tutorial")
+    shipped_terms = ("shipped", "production", "owned", "deployed", "serving", "a/b", "ndcg", "mrr")
+    if (
+        any(term in text for term in generic_terms)
+        and any(term in text for term in demo_terms)
+        and target_evidence <= 4
+        and not any(term in text for term in shipped_terms)
+    ):
+        return ["generic AI without shipped retrieval evidence"]
+    if (
+        any(term in text for term in generic_terms)
+        and "no production retrieval" in text
+        and target_evidence <= 5
+    ):
+        return ["generic AI without shipped retrieval evidence"]
     return []
 
 

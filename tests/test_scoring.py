@@ -8,10 +8,12 @@ from redrob_ranker.scoring import rank_candidates, score_candidate
 from tests.fixtures import (
     base_candidate,
     cv_speech_candidate,
+    generic_ai_keyword_candidate,
     keyword_stuffed_candidate,
     not_open_candidate,
     outside_india_candidate,
     plain_language_matching_candidate,
+    semantic_matching_candidate,
     stale_candidate,
 )
 
@@ -111,3 +113,22 @@ def test_reasoning_uses_readable_plain_language_evidence_labels() -> None:
 
     assert "surface" not in reasoning
     assert "relevance systems" in reasoning
+
+
+def test_score_candidate_exposes_component_breakdown() -> None:
+    scored = score_candidate(base_candidate(), reference_date=date(2026, 6, 17))
+
+    assert scored.components.role > 0
+    assert scored.components.retrieval > 0
+    assert scored.components.ranking > 0
+    assert scored.components.evaluation > 0
+    assert scored.components.risk == 0
+    assert scored.components.total == scored.score
+
+
+def test_semantic_matching_candidate_beats_generic_ai_profile() -> None:
+    semantic = score_candidate(semantic_matching_candidate(), reference_date=date(2026, 6, 17))
+    generic_ai = score_candidate(generic_ai_keyword_candidate(), reference_date=date(2026, 6, 17))
+
+    assert semantic.score > generic_ai.score + 45
+    assert "generic AI without shipped retrieval evidence" in generic_ai.features.risk_flags

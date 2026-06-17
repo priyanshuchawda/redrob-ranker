@@ -27,11 +27,27 @@ class CandidateFeatures:
 
 
 @dataclass(frozen=True)
+class ScoreComponents:
+    role: float
+    seniority: float
+    retrieval: float
+    ranking: float
+    evaluation: float
+    skills: float
+    product: float
+    availability: float
+    logistics: float
+    risk: float
+    total: float
+
+
+@dataclass(frozen=True)
 class ScoredCandidate:
     candidate_id: str
     score: float
     candidate: dict
     features: CandidateFeatures
+    components: ScoreComponents
 
 
 @dataclass(frozen=True)
@@ -40,4 +56,3 @@ class RankedCandidate:
     rank: int
     score: float
     reasoning: str
-

@@ -270,3 +270,74 @@ def cv_speech_candidate(candidate_id: str = "CAND_0000007") -> dict:
         {"name": "LLMs", "proficiency": "intermediate", "endorsements": 7, "duration_months": 7},
     ]
     return candidate
+
+
+def semantic_matching_candidate(candidate_id: str = "CAND_0000008") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["profile"].update(
+        {
+            "current_title": "Senior AI Engineer",
+            "headline": "Senior AI Engineer for candidate matching and search relevance",
+            "summary": (
+                "Built candidate matching, talent matching, job matching, and profile "
+                "matching systems with candidate generation and reranking stages."
+            ),
+        }
+    )
+    candidate["career_history"][0]["description"] = (
+        "Owned a two-tower candidate matching and candidate recommendation system for talent matching. "
+        "Designed the candidate generation recall stage, cross encoder reranker, "
+        "precision stage, retrieval evaluation, and search relevance dashboards."
+    )
+    candidate["career_history"][1]["description"] = (
+        "Built entity matching and profile matching services for job matching workflows."
+    )
+    candidate["skills"].extend(
+        [
+            {"name": "Two-Tower Models", "proficiency": "advanced", "endorsements": 21, "duration_months": 32},
+            {"name": "Cross Encoder", "proficiency": "advanced", "endorsements": 19, "duration_months": 28},
+            {"name": "Reranking", "proficiency": "advanced", "endorsements": 24, "duration_months": 35},
+        ]
+    )
+    return candidate
+
+
+def generic_ai_keyword_candidate(candidate_id: str = "CAND_0000009") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["profile"].update(
+        {
+            "current_title": "AI Specialist",
+            "headline": "AI Specialist | LLM RAG OpenAI Pinecone LangChain",
+            "summary": (
+                "Built demos with LangChain, OpenAI, RAG, Pinecone, and prompt engineering. "
+                "Most work is recent proof-of-concept automation and tutorials."
+            ),
+            "current_company": "Acme Corp",
+            "current_industry": "Manufacturing",
+        }
+    )
+    candidate["career_history"] = [
+        {
+            "company": "Acme Corp",
+            "title": "AI Specialist",
+            "start_date": "2025-01-01",
+            "end_date": None,
+            "duration_months": 17,
+            "is_current": True,
+            "industry": "Manufacturing",
+            "company_size": "5001-10000",
+            "description": (
+                "Built internal demos using LangChain, OpenAI APIs, RAG templates, "
+                "and prompt engineering. No production retrieval, ranking, or evaluation ownership."
+            ),
+        }
+    ]
+    candidate["skills"] = [
+        {"name": "LLMs", "proficiency": "expert", "endorsements": 20, "duration_months": 8},
+        {"name": "RAG", "proficiency": "expert", "endorsements": 18, "duration_months": 7},
+        {"name": "Pinecone", "proficiency": "expert", "endorsements": 16, "duration_months": 6},
+        {"name": "Fine-tuning LLMs", "proficiency": "intermediate", "endorsements": 10, "duration_months": 5},
+        {"name": "LoRA", "proficiency": "intermediate", "endorsements": 7, "duration_months": 4},
+        {"name": "Python", "proficiency": "intermediate", "endorsements": 8, "duration_months": 12},
+    ]
+    return candidate

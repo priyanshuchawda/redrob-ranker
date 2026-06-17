@@ -15,6 +15,7 @@ The solution is a deterministic AI-recruiter ranker that reads structured candid
 What differentiates it:
 
 - Career-history evidence is weighted above skills-list keyword matches.
+- The system optimizes for recruiter-trustable evidence, not keyword density.
 - Behavioral Redrob signals affect practical hireability.
 - Keyword stuffing and honeypot-like anomalies are penalized.
 - Explanations are generated from source fields only.
@@ -38,6 +39,7 @@ Most important signals:
 - Current title and career-history titles.
 - Career descriptions mentioning retrieval, ranking, recommendations, search, NDCG/MRR/MAP, A/B tests, and shipped ML systems.
 - Plain-language descriptions of relevance systems, matching layers, search/discovery products, and user-intent surfacing.
+- Hiring/search relevance patterns such as candidate matching, talent matching, job matching, profile matching, two-tower retrieval, cross-encoder reranking, candidate generation, recall stages, precision stages, and retrieval evaluation.
 - Relevant skill names, proficiency, duration, endorsements, and assessment scores.
 - Product-company and AI/ML industry history.
 - Redrob activity: last active date, open-to-work, recruiter response rate, response time, interview completion, offer acceptance, recruiter saves, notice period, and verification.
@@ -133,8 +135,8 @@ flowchart LR
 
 ## Results And Performance
 
-- Unit tests: 17 passing.
-- Full dataset runtime: 173.25 seconds on local CPU.
+- Unit tests: 23 passing.
+- Full dataset runtime with debug and audit outputs: 251.27 seconds on local CPU.
 - Official validation: `Submission is valid.`
 - Output: exactly 100 ranked candidates with factual reasoning.
 
