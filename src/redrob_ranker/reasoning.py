@@ -38,7 +38,9 @@ def _concerns(flags: tuple[str, ...]) -> tuple[str, ...]:
             "stale profile",
             "low recruiter response",
             "long notice period",
+            "not marked open to work",
             "outside India",
+            "non-target ML domain",
             "keyword-stuffed profile",
             "expert skills with zero duration",
         }
@@ -74,6 +76,10 @@ def _evidence_label(phrase: str) -> str:
         return "embeddings"
     if phrase in {"a/b testing", "a/b test", "ab test"}:
         return "A/B testing"
+    if phrase in {"surface", "relevance"}:
+        return "relevance systems"
+    if phrase == "user intent":
+        return "user-intent matching"
     if phrase == "ndcg":
         return "NDCG"
     if phrase == "mrr":

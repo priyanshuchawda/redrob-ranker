@@ -160,3 +160,113 @@ def stale_candidate(candidate_id: str = "CAND_0000003") -> dict:
     )
     return candidate
 
+
+def plain_language_matching_candidate(candidate_id: str = "CAND_0000004") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["profile"].update(
+        {
+            "headline": "Lead AI Engineer building relevance systems",
+            "summary": (
+                "Senior engineer building systems that connect users with relevant "
+                "information at scale. Strong product judgment and evaluation habits."
+            ),
+            "current_title": "Lead AI Engineer",
+            "current_company": "Sarvam AI",
+            "current_industry": "AI/ML",
+            "location": "Delhi, Delhi",
+        }
+    )
+    candidate["career_history"] = [
+        {
+            "company": "Sarvam AI",
+            "title": "Lead AI Engineer",
+            "start_date": "2023-01-01",
+            "end_date": None,
+            "duration_months": 38,
+            "is_current": True,
+            "industry": "AI/ML",
+            "company_size": "201-500",
+            "description": (
+                "Owned the search and discovery experience end-to-end. Built the "
+                "matching layer that decides what to surface for each user intent, "
+                "with evaluation methodology tied to online engagement."
+            ),
+        },
+        {
+            "company": "Verloop.io",
+            "title": "Staff Machine Learning Engineer",
+            "start_date": "2019-01-01",
+            "end_date": "2022-12-31",
+            "duration_months": 48,
+            "is_current": False,
+            "industry": "Conversational AI",
+            "company_size": "201-500",
+            "description": (
+                "Overhauled the matching layer from hand-tuned heuristics to explicit "
+                "modeling and evaluation, then grew the team around the system."
+            ),
+        },
+    ]
+    candidate["skills"].extend(
+        [
+            {"name": "Ranking Systems", "proficiency": "advanced", "endorsements": 24, "duration_months": 36},
+            {"name": "Information Retrieval Systems", "proficiency": "advanced", "endorsements": 20, "duration_months": 39},
+            {"name": "Search Backend", "proficiency": "advanced", "endorsements": 14, "duration_months": 32},
+        ]
+    )
+    return candidate
+
+
+def outside_india_candidate(candidate_id: str = "CAND_0000005") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["profile"].update({"location": "London", "country": "UK"})
+    return candidate
+
+
+def not_open_candidate(candidate_id: str = "CAND_0000006") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["redrob_signals"].update({"open_to_work_flag": False})
+    return candidate
+
+
+def cv_speech_candidate(candidate_id: str = "CAND_0000007") -> dict:
+    candidate = deepcopy(base_candidate(candidate_id))
+    candidate["profile"].update(
+        {
+            "headline": "AI Research Engineer | Computer Vision and Speech",
+            "summary": (
+                "Research-focused AI engineer with most production experience in "
+                "computer vision and speech recognition. Interested in moving into "
+                "NLP and retrieval work."
+            ),
+            "current_title": "AI Research Engineer",
+            "current_company": "Aganitha",
+            "current_industry": "AI/ML",
+        }
+    )
+    candidate["career_history"] = [
+        {
+            "company": "Aganitha",
+            "title": "AI Research Engineer",
+            "start_date": "2020-01-01",
+            "end_date": None,
+            "duration_months": 76,
+            "is_current": True,
+            "industry": "AI/ML",
+            "company_size": "201-500",
+            "description": (
+                "Built computer vision models for image classification and object "
+                "detection, plus speech recognition experiments. Production deployment "
+                "was handled by a separate platform team; now interested in transitioning "
+                "toward NLP and retrieval."
+            ),
+        }
+    ]
+    candidate["skills"] = [
+        {"name": "Computer Vision", "proficiency": "expert", "endorsements": 44, "duration_months": 60},
+        {"name": "Speech Recognition", "proficiency": "expert", "endorsements": 40, "duration_months": 58},
+        {"name": "Object Detection", "proficiency": "advanced", "endorsements": 28, "duration_months": 48},
+        {"name": "NLP", "proficiency": "intermediate", "endorsements": 8, "duration_months": 8},
+        {"name": "LLMs", "proficiency": "intermediate", "endorsements": 7, "duration_months": 7},
+    ]
+    return candidate

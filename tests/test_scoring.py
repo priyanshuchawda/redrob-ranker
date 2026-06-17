@@ -5,7 +5,15 @@ from datetime import date
 
 from redrob_ranker.reasoning import generate_reasoning
 from redrob_ranker.scoring import rank_candidates, score_candidate
-from tests.fixtures import base_candidate, keyword_stuffed_candidate, stale_candidate
+from tests.fixtures import (
+    base_candidate,
+    cv_speech_candidate,
+    keyword_stuffed_candidate,
+    not_open_candidate,
+    outside_india_candidate,
+    plain_language_matching_candidate,
+    stale_candidate,
+)
 
 
 def test_true_retrieval_candidate_outranks_keyword_stuffed_profile() -> None:
@@ -58,3 +66,48 @@ def test_reasoning_deduplicates_embedding_phrases() -> None:
     reasoning = generate_reasoning(scored)
 
     assert not (re.search(r"\bembedding\b", reasoning) and re.search(r"\bembeddings\b", reasoning))
+
+
+def test_plain_language_matching_candidate_beats_tool_keyword_profile() -> None:
+    plain_language = score_candidate(plain_language_matching_candidate(), reference_date=date(2026, 6, 17))
+    keyword_profile = score_candidate(keyword_stuffed_candidate(), reference_date=date(2026, 6, 17))
+
+    assert plain_language.score > keyword_profile.score + 35
+
+
+def test_outside_india_and_not_open_profiles_are_downweighted() -> None:
+    local = score_candidate(base_candidate("CAND_0000001"), reference_date=date(2026, 6, 17))
+    outside = score_candidate(outside_india_candidate("CAND_0000005"), reference_date=date(2026, 6, 17))
+    not_open = score_candidate(not_open_candidate("CAND_0000006"), reference_date=date(2026, 6, 17))
+
+    assert local.score > outside.score + 18
+    assert local.score > not_open.score + 6
+
+
+def test_cv_speech_heavy_ai_profile_loses_to_retrieval_production_profile() -> None:
+    retrieval = score_candidate(base_candidate("CAND_0000001"), reference_date=date(2026, 6, 17))
+    cv_speech = score_candidate(cv_speech_candidate("CAND_0000007"), reference_date=date(2026, 6, 17))
+
+    assert retrieval.score > cv_speech.score + 25
+    assert "non-target ML domain" in cv_speech.features.risk_flags
+
+
+def test_reasoning_mentions_not_open_concern() -> None:
+    scored = score_candidate(not_open_candidate(), reference_date=date(2026, 6, 17))
+    reasoning = generate_reasoning(scored)
+
+    assert "not marked open to work" in reasoning
+
+
+def test_reasoning_uses_readable_plain_language_evidence_labels() -> None:
+    candidate = plain_language_matching_candidate()
+    candidate["career_history"][0]["description"] = (
+        "Owned search and discovery systems that surface relevant results for "
+        "each user intent."
+    )
+    candidate["career_history"][1]["description"] = "Built product ML systems."
+
+    reasoning = generate_reasoning(score_candidate(candidate, reference_date=date(2026, 6, 17)))
+
+    assert "surface" not in reasoning
+    assert "relevance systems" in reasoning

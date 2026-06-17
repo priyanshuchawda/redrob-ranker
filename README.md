@@ -22,7 +22,7 @@ Validate the generated file with the challenge validator:
 python "..\\[PUB] India_runs_data_and_ai_challenge\\India_runs_data_and_ai_challenge\\validate_submission.py" submission.csv
 ```
 
-On the development machine, the full 100K-candidate run completed in 41.7 seconds on CPU.
+On the development machine, the full 100K-candidate run completed in 173.25 seconds on CPU after the expanded evidence/risk pass.
 
 ## Tests
 
@@ -30,11 +30,11 @@ On the development machine, the full 100K-candidate run completed in 41.7 second
 python -m pytest --rootdir . -q
 ```
 
-Current status: 10 tests passing.
+Current status: 17 tests passing.
 
 ## Method
 
-The ranker uses deterministic feature scoring rather than hosted LLM calls. It rewards career-history evidence for production ML, retrieval, ranking, search, recommendations, evaluation, and product engineering. It down-weights keyword-stuffed profiles, suspicious skill claims, weak availability signals, pure services trajectories, poor location fit, and other risk indicators.
+The ranker uses deterministic feature scoring rather than hosted LLM calls. It rewards career-history evidence for production ML, retrieval, ranking, search, recommendations, evaluation, product engineering, and plain-language relevance-system work. It down-weights keyword-stuffed profiles, suspicious skill claims, weak availability signals, pure services trajectories, non-target ML domains, poor location fit, and other risk indicators.
 
 The generated `reasoning` column is built from candidate fields only, so every claim can be traced back to the profile.
 
@@ -50,4 +50,3 @@ The generated `reasoning` column is built from candidate fields only, so every c
 ## No-Network Guarantee
 
 The ranking path uses only Python standard-library code. It does not call hosted LLMs, external embedding APIs, web services, GPUs, or remote databases.
-

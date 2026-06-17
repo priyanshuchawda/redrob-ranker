@@ -3,7 +3,13 @@ from __future__ import annotations
 from datetime import date
 
 from redrob_ranker.features import extract_features
-from tests.fixtures import base_candidate, keyword_stuffed_candidate, stale_candidate
+from tests.fixtures import (
+    base_candidate,
+    keyword_stuffed_candidate,
+    outside_india_candidate,
+    plain_language_matching_candidate,
+    stale_candidate,
+)
 
 
 def test_extracts_production_retrieval_and_ranking_evidence() -> None:
@@ -47,3 +53,21 @@ def test_junior_ml_title_is_not_treated_as_senior_fit() -> None:
     features = extract_features(candidate, reference_date=date(2026, 6, 17))
 
     assert features.role_score <= 2.0
+
+
+def test_extracts_plain_language_relevance_system_evidence() -> None:
+    features = extract_features(plain_language_matching_candidate(), reference_date=date(2026, 6, 17))
+
+    assert features.retrieval_evidence >= 3
+    assert features.ranking_evidence >= 2
+    assert features.evaluation_evidence >= 2
+    assert "matching layer" in features.evidence_phrases
+    assert "Ranking Systems" in features.relevant_skills
+
+
+def test_outside_india_is_a_material_logistics_risk() -> None:
+    features = extract_features(outside_india_candidate(), reference_date=date(2026, 6, 17))
+
+    assert features.logistics_score <= 1.0
+    assert "outside India" in features.risk_flags
+    assert features.risk_penalty >= 8.0

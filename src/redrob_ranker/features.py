@@ -36,11 +36,17 @@ TARGET_CITY_PATTERN = re.compile(
 RELEVANT_SKILLS = {
     "A/B Testing",
     "Airflow",
+    "BM25",
+    "BentoML",
     "Docker",
     "Embeddings",
     "Elasticsearch",
     "FAISS",
+    "FastAPI",
     "Fine-tuning LLMs",
+    "Hugging Face Transformers",
+    "Information Retrieval",
+    "Information Retrieval Systems",
     "Kafka",
     "Kubernetes",
     "Learning to Rank",
@@ -49,16 +55,22 @@ RELEVANT_SKILLS = {
     "Machine Learning",
     "Milvus",
     "MLOps",
+    "MLflow",
     "NLP",
     "OpenSearch",
     "Pinecone",
+    "pgvector",
     "Python",
     "PyTorch",
     "Qdrant",
     "RAG",
     "Recommendation Systems",
+    "Ranking Systems",
     "Scikit-learn",
+    "Search Backend",
+    "Semantic Search",
     "TensorFlow",
+    "Text Encoders",
     "Vector Search",
     "Weaviate",
     "XGBoost",
@@ -81,6 +93,11 @@ RETRIEVAL_PHRASES = (
     "elasticsearch",
     "retrieval quality",
     "retrieval system",
+    "search and discovery",
+    "matching layer",
+    "surface",
+    "user intent",
+    "relevance",
 )
 
 RANKING_PHRASES = (
@@ -92,6 +109,10 @@ RANKING_PHRASES = (
     "ranker",
     "ranking",
     "recommender",
+    "matching layer",
+    "explicit modeling",
+    "hand-tuned heuristic",
+    "heuristic system",
 )
 
 EVALUATION_PHRASES = (
@@ -104,6 +125,10 @@ EVALUATION_PHRASES = (
     "a/b test",
     "ab test",
     "relevance regression",
+    "evaluation methodology",
+    "online engagement",
+    "offline metrics",
+    "recruiter engagement",
 )
 
 
@@ -138,7 +163,8 @@ def extract_features(candidate: Mapping, reference_date: date | None = None) -> 
         relevant_skill_count=len(relevant_skills),
         skills=skills,
     )
-    risk_flags = [*availability_flags, *logistics_flags, *keyword_flags]
+    domain_flags = _domain_focus_flags(profile, history, retrieval_evidence + ranking_evidence + evaluation_evidence)
+    risk_flags = [*availability_flags, *logistics_flags, *keyword_flags, *domain_flags]
     risk_penalty = _risk_penalty(profile, history, signals, risk_flags, keyword_risk)
 
     return CandidateFeatures(
@@ -226,6 +252,8 @@ def _availability_score(signals: Mapping, reference_date: date) -> tuple[float, 
 
     if bool(signals.get("open_to_work_flag")):
         score += 2.0
+    else:
+        flags.append("not marked open to work")
 
     last_active = _parse_date(signals.get("last_active_date"))
     if last_active is None:
@@ -289,6 +317,7 @@ def _logistics_score(profile: Mapping, signals: Mapping) -> tuple[float, list[st
         score += 2.0
     else:
         flags.append("outside India")
+        return (1.0 if bool(signals.get("willing_to_relocate")) else 0.0), flags
 
     if TARGET_CITY_PATTERN.search(location):
         score += 2.0
@@ -346,9 +375,47 @@ def _risk_penalty(
         penalty += 3.0
     if _experience_history_gap(profile, history) > 3.0:
         penalty += 20.0
+    if "outside India" in risk_flags:
+        penalty += 12.0
+    if "not marked open to work" in risk_flags:
+        penalty += 6.0
+    if "non-target ML domain" in risk_flags:
+        penalty += 12.0
     if _as_float(signals.get("github_activity_score", 0.0)) == -1:
         penalty += 0.5
     return penalty
+
+
+def _domain_focus_flags(profile: Mapping, history: Iterable[Mapping], target_evidence: int) -> list[str]:
+    text = " ".join(
+        [
+            str(profile.get("headline", "")),
+            str(profile.get("summary", "")),
+            _career_text(history),
+        ]
+    ).lower()
+    non_target_terms = (
+        "computer vision",
+        "image classification",
+        "object detection",
+        "speech recognition",
+        "robotics",
+        "tts",
+        "asr",
+    )
+    transition_terms = (
+        "interested in transitioning",
+        "transitioning toward",
+        "professional experience there is limited",
+        "production deployment was handled",
+    )
+    if (
+        any(term in text for term in non_target_terms)
+        and any(term in text for term in transition_terms)
+        and target_evidence <= 2
+    ):
+        return ["non-target ML domain"]
+    return []
 
 
 def _experience_history_gap(profile: Mapping, history: Iterable[Mapping]) -> float:
