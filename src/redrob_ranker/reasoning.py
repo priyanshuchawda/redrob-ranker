@@ -14,14 +14,29 @@ def generate_reasoning(scored: ScoredCandidate) -> str:
     ]
     evidence = _display_evidence(features.evidence_phrases)
     if evidence:
-        strengths.append(f"evidence includes {_join_phrases(evidence[:3])}")
+        evidence_prefix = (
+            "career evidence includes"
+            if features.career_evidence_score > 0
+            else "profile claims include"
+        )
+        strengths.append(f"{evidence_prefix} {_join_phrases(evidence[:3])}")
     elif features.relevant_skills:
         strengths.append(f"skills include {_join_phrases(features.relevant_skills[:3])}")
 
-    location = profile.get("location", "unknown location")
-    response_rate = float(signals.get("recruiter_response_rate") or 0.0)
-    notice = int(signals.get("notice_period_days") or 0)
-    strengths.append(f"{location}; response rate {response_rate:.2f}; notice {notice} days")
+    practical_facts: list[str] = []
+    location = profile.get("location")
+    if location:
+        practical_facts.append(str(location))
+    if signals.get("recruiter_response_rate") is not None:
+        response_rate = float(signals.get("recruiter_response_rate") or 0.0)
+        if 1.0 < response_rate <= 100.0:
+            response_rate /= 100.0
+        practical_facts.append(f"response rate {response_rate:.2f}")
+    if signals.get("notice_period_days") is not None:
+        notice = max(int(signals.get("notice_period_days") or 0), 0)
+        practical_facts.append(f"notice {notice} days")
+    if practical_facts:
+        strengths.append("; ".join(practical_facts))
 
     concerns = _concerns(features.risk_flags)
     if concerns:
@@ -41,6 +56,7 @@ def _concerns(flags: tuple[str, ...]) -> tuple[str, ...]:
             "not marked open to work",
             "outside India",
             "non-target ML domain",
+            "generic AI without shipped retrieval evidence",
             "keyword-stuffed profile",
             "expert skills with zero duration",
         }

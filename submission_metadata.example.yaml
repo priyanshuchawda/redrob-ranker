@@ -20,7 +20,7 @@ compute:
   platform: "Windows local machine"
   cpu_cores: 8
   ram_gb: 16
-  python_version: "3.13.12"
+  python_version: "3.12.7"
   os: "Windows"
   uses_gpu_for_inference: false
   has_network_during_ranking: false
@@ -35,12 +35,12 @@ ai_usage_summary: |
   No ranking-time hosted AI calls are made by the submitted system.
 
 methodology_summary: |
-  Deterministic hybrid ranker for the Senior AI Engineer JD. It extracts career-history
-  evidence for retrieval, ranking, recommendation systems, search, evaluation, and product
-  ML work; combines it with seniority, product-company, logistics, and Redrob behavioral
-  signals; and applies penalties for keyword stuffing, suspicious skill claims, stale
-  profiles, poor response rates, service-only trajectories, and logistics risk. Reasoning
-  strings are generated from candidate facts only.
+  Deterministic EvidenceGraph ranker for the Senior AI Engineer JD. It groups synonymous
+  career phrases into bounded retrieval, ranking, recommendation, matching, and evaluation
+  concepts; weights current production ownership above old or profile-only claims; verifies
+  skills through duration, assessments, endorsements, and career corroboration; combines
+  fit with product, logistics, and Redrob behavioral signals; and applies adversarial risk
+  controls. Reasoning strings are generated from candidate facts only.
 
 declarations:
   read_submission_spec: true

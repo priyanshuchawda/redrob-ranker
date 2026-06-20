@@ -20,6 +20,10 @@ DEBUG_HEADER = [
     "profile_evidence",
     "skills",
     "product",
+    "production",
+    "engineering",
+    "leadership",
+    "confidence",
     "availability",
     "logistics",
     "risk",
@@ -29,6 +33,7 @@ DEBUG_HEADER = [
     "country",
     "relevant_skill_count",
     "evidence_phrases",
+    "evidence_concepts",
     "risk_flags",
 ]
 AUDIT_HEADER = ["candidate_id", "rank", "score", "verdict", "reason", "fix_needed"]
@@ -38,9 +43,19 @@ def iter_candidates(path: str | Path) -> Iterator[dict]:
     candidate_path = Path(path)
     opener = gzip.open if candidate_path.suffix == ".gz" else open
     with opener(candidate_path, "rt", encoding="utf-8") as handle:
-        for line in handle:
+        for line_number, line in enumerate(handle, start=1):
             if line.strip():
-                yield json.loads(line)
+                try:
+                    candidate = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(
+                        f"Invalid JSON in {candidate_path} at line {line_number}: {exc.msg}"
+                    ) from exc
+                if not isinstance(candidate, dict):
+                    raise ValueError(
+                        f"Expected a JSON object in {candidate_path} at line {line_number}"
+                    )
+                yield candidate
 
 
 def write_submission(rows: Iterable[RankedCandidate], output_path: str | Path) -> None:
@@ -72,6 +87,10 @@ def write_debug_scores(rows: Iterable[ScoredCandidate], output_path: str | Path)
                     f"{components.profile_evidence:.4f}",
                     f"{components.skills:.4f}",
                     f"{components.product:.4f}",
+                    f"{components.production:.4f}",
+                    f"{components.engineering:.4f}",
+                    f"{components.leadership:.4f}",
+                    f"{components.confidence:.4f}",
                     f"{components.availability:.4f}",
                     f"{components.logistics:.4f}",
                     f"{components.risk:.4f}",
@@ -81,6 +100,7 @@ def write_debug_scores(rows: Iterable[ScoredCandidate], output_path: str | Path)
                     features.country,
                     features.relevant_skill_count,
                     "; ".join(features.evidence_phrases),
+                    "; ".join(features.evidence_concepts),
                     "; ".join(features.risk_flags),
                 ]
             )
@@ -116,7 +136,7 @@ def _audit_verdict(scored: ScoredCandidate) -> tuple[str, str, str]:
     evidence_total = components.retrieval + components.ranking + components.evaluation
     strong_evidence = evidence_total >= 24
     moderate_evidence = evidence_total >= 18
-    good_logistics = features.country == "India" and components.logistics >= 6
+    good_logistics = "outside India" not in features.risk_flags and components.logistics >= 6
     good_availability = components.availability >= 14
 
     if strong_evidence and good_logistics and good_availability and not risk_hits:

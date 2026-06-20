@@ -10,7 +10,7 @@ Recruiters need to identify a small number of genuinely strong Senior AI Enginee
 
 ## Solution Overview
 
-This solution is a deterministic candidate ranker that optimizes for recruiter-trustable evidence, not keyword density. It streams the candidate JSONL file, extracts job-specific evidence, scores each candidate across fit and hireability dimensions, applies risk penalties, and emits a valid top-100 CSV with grounded explanations.
+This solution is a deterministic EvidenceGraph ranker that optimizes for recruiter-trustable evidence, not keyword density. It streams the candidate JSONL file, groups synonymous phrases into job-relevant concepts, weights recent production ownership above old or profile-only claims, corroborates skills against career history, applies hireability and risk controls, and emits a top-100 CSV with grounded explanations.
 
 ## JD Understanding
 
@@ -29,10 +29,13 @@ The ranker evaluates:
 - Product-company and AI/ML industry experience.
 - Redrob behavioral signals: open-to-work, last active date, recruiter response rate, response time, notice period, interview completion, offer acceptance, recruiter saves, and verification.
 - Risk flags for keyword stuffing, generic AI demos, non-target ML domains, outside-India logistics, stale profiles, low response rate, and suspicious skill claims.
+- Production and ownership evidence such as shipped, deployed, serving, owned, designed, and measurable impact.
+- Negation handling so claims such as "no production retrieval ownership" do not become positive matches.
+- Case-insensitive skill aliases and career/skill corroboration.
 
 ## Ranking Methodology
 
-Each candidate receives component scores for role, seniority, retrieval evidence, ranking evidence, evaluation evidence, profile evidence, skills, product-company history, availability, logistics, and risk. Final ranking sorts by total score descending and uses `candidate_id` ascending as the deterministic tie-breaker.
+Each candidate receives bounded component scores for role, seniority, concept-level retrieval, ranking, evaluation, profile evidence, skill trust, product history, production ownership, engineering depth, leadership, evidence confidence, availability, logistics, and risk. Final ranking sorts by total score descending and uses `candidate_id` ascending as the deterministic tie-breaker.
 
 The strongest top-10 candidates are expected to have production search/retrieval/ranking evidence, India/logistics fit, recent activity, open-to-work or strong availability signals, and no major risk flags.
 
@@ -82,10 +85,11 @@ flowchart TB
 
 ## Results & Performance
 
-- Tests: 29 passing.
-- Full run with submission, debug, and audit outputs: 111.27 seconds locally, under the 5-minute CPU budget.
-- Official validator result: `Submission is valid.`
-- Top-100 output: exactly 100 rows with factual reasoning.
+- Tests: 43 passing.
+- Labeled synthetic ranking evaluation: Precision@75 1.000, Recall@75 1.000, NDCG@75 0.979 across 300 candidates and 12 archetypes.
+- Synthetic 10,000-candidate benchmark: 10.55 seconds, approximately 948 candidates/second.
+- End-to-end contract check: 120 inputs produced exactly 100 ranked rows plus debug and audit outputs.
+- The private challenge dataset and official validator are not stored in Git; rerun both before portal upload.
 
 ## Technologies Used
 

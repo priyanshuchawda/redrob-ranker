@@ -16,6 +16,7 @@ sample_submission.csv
 submission.csv
 *.csv
 !tests/fixtures/*.csv
+.synthetic-eval*/
 
 # Local metadata with private contact info
 submission_metadata.yaml

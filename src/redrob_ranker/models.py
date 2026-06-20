@@ -20,11 +20,19 @@ class CandidateFeatures:
     profile_evaluation_evidence: int
     career_evidence_score: float
     profile_evidence_score: float
+    retrieval_quality_score: float
+    ranking_quality_score: float
+    evaluation_quality_score: float
+    production_score: float
+    engineering_score: float
+    leadership_score: float
+    evidence_confidence: float
     product_company_months: int
     relevant_skill_count: int
     skill_trust_score: float
     relevant_skills: tuple[str, ...]
     evidence_phrases: tuple[str, ...]
+    evidence_concepts: tuple[str, ...]
     availability_score: float
     logistics_score: float
     risk_penalty: float
@@ -42,6 +50,10 @@ class ScoreComponents:
     profile_evidence: float
     skills: float
     product: float
+    production: float
+    engineering: float
+    leadership: float
+    confidence: float
     availability: float
     logistics: float
     risk: float

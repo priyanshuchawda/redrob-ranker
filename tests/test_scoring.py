@@ -149,3 +149,30 @@ def test_skill_component_uses_trust_score_not_raw_count_only() -> None:
     generic = score_candidate(generic_ai_keyword_candidate(), reference_date=date(2026, 6, 17))
 
     assert trusted.components.skills > generic.components.skills
+
+
+def test_profile_only_reasoning_labels_unverified_claims() -> None:
+    reasoning = generate_reasoning(
+        score_candidate(profile_only_evidence_candidate(), reference_date=date(2026, 6, 17))
+    )
+
+    assert "profile claims include" in reasoning
+    assert "career evidence includes" not in reasoning
+
+
+def test_reasoning_surfaces_generic_ai_demo_risk() -> None:
+    reasoning = generate_reasoning(
+        score_candidate(generic_ai_keyword_candidate(), reference_date=date(2026, 6, 17))
+    )
+
+    assert "generic AI without shipped retrieval evidence" in reasoning
+
+
+def test_non_relocating_overseas_fit_loses_to_local_plain_language_fit() -> None:
+    local = score_candidate(plain_language_matching_candidate(), reference_date=date(2026, 6, 17))
+    overseas_candidate = semantic_matching_candidate()
+    overseas_candidate["profile"].update({"location": "London", "country": "United Kingdom"})
+    overseas_candidate["redrob_signals"]["willing_to_relocate"] = False
+    overseas = score_candidate(overseas_candidate, reference_date=date(2026, 6, 17))
+
+    assert local.score > overseas.score
