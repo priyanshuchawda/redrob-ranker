@@ -37,6 +37,13 @@ def test_availability_penalty_lowers_otherwise_strong_candidate() -> None:
     assert active.score - stale.score >= 10
 
 
+def test_stale_low_response_candidate_gets_large_hiring_penalty() -> None:
+    active = score_candidate(base_candidate("CAND_0000001"), reference_date=date(2026, 6, 17))
+    stale = score_candidate(stale_candidate("CAND_0000003"), reference_date=date(2026, 6, 17))
+
+    assert active.score > stale.score + 55
+
+
 def test_ranking_is_score_descending_then_candidate_id_ascending() -> None:
     first = base_candidate("CAND_0000002")
     second = base_candidate("CAND_0000001")
@@ -86,6 +93,20 @@ def test_outside_india_and_not_open_profiles_are_downweighted() -> None:
 
     assert local.score > outside.score + 18
     assert local.score > not_open.score + 6
+
+
+def test_non_relocating_overseas_candidate_is_materially_below_local_equivalent() -> None:
+    local = score_candidate(base_candidate("CAND_0000001"), reference_date=date(2026, 6, 17))
+    outside = score_candidate(outside_india_candidate("CAND_0000005"), reference_date=date(2026, 6, 17))
+
+    assert local.score > outside.score + 35
+
+
+def test_not_open_candidate_cannot_nearly_tie_active_equivalent() -> None:
+    active = score_candidate(base_candidate("CAND_0000001"), reference_date=date(2026, 6, 17))
+    not_open = score_candidate(not_open_candidate("CAND_0000006"), reference_date=date(2026, 6, 17))
+
+    assert active.score > not_open.score + 12
 
 
 def test_cv_speech_heavy_ai_profile_loses_to_retrieval_production_profile() -> None:

@@ -137,7 +137,7 @@ def _audit_verdict(scored: ScoredCandidate) -> tuple[str, str, str]:
     strong_evidence = evidence_total >= 24
     moderate_evidence = evidence_total >= 18
     good_logistics = "outside India" not in features.risk_flags and components.logistics >= 6
-    good_availability = components.availability >= 14
+    good_availability = components.availability >= 11.0
 
     if strong_evidence and good_logistics and good_availability and not risk_hits:
         return "A", "Recruiter-trustable production search/ranking fit.", ""

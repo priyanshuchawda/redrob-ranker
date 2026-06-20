@@ -87,11 +87,12 @@ See [`docs/synthetic_evaluation.md`](docs/synthetic_evaluation.md) for labeled e
 
 Verified in this repository:
 
-- 43 tests passing, including an end-to-end synthetic ranking regression.
+- 46 tests passing, including an end-to-end synthetic ranking regression.
 - Labeled 300-candidate evaluation: Precision@75 1.000, Recall@75 1.000, NDCG@75 0.979.
 - Larger 1,200-candidate stress run: Precision@300 1.000, Recall@300 1.000, NDCG@300 0.983.
 - Adversarial coverage for negated claims, keyword stuffing, aliases, missing telemetry, stale profiles, logistics, non-target domains, and deterministic ties.
 - End-to-end CLI contract check: 120 JSONL candidates produced 100 ranked rows plus debug and audit files.
+- Full 100,000-candidate challenge run: 202.38 seconds on the current development machine.
 - Synthetic 10,000-candidate benchmark: 10.55 seconds on the current development machine, about 948 candidates/second.
 
 The challenge dataset is intentionally excluded from Git. Run the command above against the private bundle to generate the final `submission.csv` and execute the official validator before upload.

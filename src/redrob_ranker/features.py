@@ -811,11 +811,11 @@ def _risk_penalty(
     if keyword_risk:
         penalty += 25.0
     if "stale profile" in risk_flags:
-        penalty += 8.0
+        penalty += 14.0
     if "low recruiter response" in risk_flags:
-        penalty += 6.0
+        penalty += 10.0
     if "long notice period" in risk_flags:
-        penalty += 3.0
+        penalty += 5.0
     service_companies = {company.casefold() for company in SERVICE_COMPANIES}
     if str(profile.get("current_company", "")).casefold() in service_companies:
         penalty += 4.0
@@ -824,9 +824,13 @@ def _risk_penalty(
     if _experience_history_gap(profile, history) > 5.0:
         penalty += 8.0
     if "outside India" in risk_flags:
-        penalty += 14.0 if bool(signals.get("willing_to_relocate")) else 25.0
+        penalty += 30.0 if bool(signals.get("willing_to_relocate")) else 42.0
     if "not marked open to work" in risk_flags:
-        penalty += 6.0
+        penalty += 14.0
+    if "stale profile" in risk_flags and "low recruiter response" in risk_flags:
+        penalty += 8.0
+    if "not marked open to work" in risk_flags and "stale profile" in risk_flags:
+        penalty += 4.0
     if "non-target ML domain" in risk_flags:
         penalty += 12.0
     if "generic AI without shipped retrieval evidence" in risk_flags:

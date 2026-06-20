@@ -220,6 +220,7 @@ def plain_language_matching_candidate(candidate_id: str = "CAND_0000004") -> dic
 def outside_india_candidate(candidate_id: str = "CAND_0000005") -> dict:
     candidate = deepcopy(base_candidate(candidate_id))
     candidate["profile"].update({"location": "London", "country": "UK"})
+    candidate["redrob_signals"]["willing_to_relocate"] = False
     return candidate
 
 

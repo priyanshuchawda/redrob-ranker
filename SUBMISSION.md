@@ -85,8 +85,9 @@ flowchart TB
 
 ## Results & Performance
 
-- Tests: 43 passing.
+- Tests: 46 passing.
 - Labeled synthetic ranking evaluation: Precision@75 1.000, Recall@75 1.000, NDCG@75 0.979 across 300 candidates and 12 archetypes.
+- Full 100,000-candidate challenge run: 202.38 seconds on the current development machine.
 - Synthetic 10,000-candidate benchmark: 10.55 seconds, approximately 948 candidates/second.
 - End-to-end contract check: 120 inputs produced exactly 100 ranked rows plus debug and audit outputs.
 - The private challenge dataset and official validator are not stored in Git; rerun both before portal upload.
