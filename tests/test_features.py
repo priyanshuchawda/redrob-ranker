@@ -145,3 +145,66 @@ def test_skill_trust_rewards_duration_assessments_and_career_support() -> None:
 
     assert trusted.skill_trust_score > trusted.relevant_skill_count
     assert trusted.skill_trust_score > generic.skill_trust_score + 6
+
+
+def test_negated_retrieval_claims_do_not_count_as_positive_evidence() -> None:
+    candidate = base_candidate()
+    candidate["career_history"] = [
+        {
+            "company": "Acme",
+            "title": "Software Engineer",
+            "duration_months": 72,
+            "is_current": True,
+            "industry": "Software",
+            "description": (
+                "Built internal APIs. No production retrieval, ranking, semantic search, "
+                "or evaluation ownership."
+            ),
+        }
+    ]
+
+    features = extract_features(candidate, reference_date=date(2026, 6, 17))
+
+    assert features.retrieval_evidence == 0
+    assert features.ranking_evidence == 0
+    assert features.evaluation_evidence == 0
+    assert features.retrieval_quality_score == 0
+
+
+def test_skill_aliases_are_normalized_and_deduplicated() -> None:
+    candidate = base_candidate()
+    candidate["skills"] = [
+        {"name": "vector-search", "proficiency": "advanced", "duration_months": 24},
+        {"name": "Vector Search", "proficiency": "advanced", "duration_months": 24},
+        {"name": "learning-to-rank", "proficiency": "advanced", "duration_months": 24},
+        {"name": "cross-encoder", "proficiency": "advanced", "duration_months": 24},
+    ]
+
+    features = extract_features(candidate, reference_date=date(2026, 6, 17))
+
+    assert features.relevant_skills == ("Cross Encoder", "Learning to Rank", "Vector Search")
+    assert features.relevant_skill_count == 3
+
+
+def test_missing_behavior_fields_are_unknown_not_negative() -> None:
+    candidate = base_candidate()
+    candidate["redrob_signals"] = {}
+
+    features = extract_features(candidate, reference_date=date(2026, 6, 17))
+
+    assert "not marked open to work" not in features.risk_flags
+    assert "low recruiter response" not in features.risk_flags
+    assert "long notice period" not in features.risk_flags
+
+
+def test_current_production_evidence_is_weighted_above_old_exposure() -> None:
+    current = base_candidate()
+    old = base_candidate()
+    old["career_history"] = list(reversed(old["career_history"]))
+    old["career_history"][0]["is_current"] = True
+    old["career_history"][1]["is_current"] = False
+
+    current_features = extract_features(current, reference_date=date(2026, 6, 17))
+    old_features = extract_features(old, reference_date=date(2026, 6, 17))
+
+    assert current_features.evidence_confidence > old_features.evidence_confidence

@@ -10,11 +10,15 @@ Recruiters need a reliable way to discover the few candidates in a large talent 
 
 ## Solution Overview
 
-The solution is a deterministic AI-recruiter ranker that reads structured candidate profiles, extracts JD-specific evidence, scores multiple fit dimensions, applies availability and risk modifiers, and emits a top-100 CSV with factual explanations.
+The solution is a deterministic EvidenceGraph AI-recruiter ranker that reads structured candidate profiles, extracts concept-level JD evidence, scores multiple fit dimensions, applies availability and risk modifiers, and emits a top-100 CSV with factual explanations.
 
 What differentiates it:
 
 - Career-history evidence is weighted above skills-list keyword matches.
+- Current production ownership is weighted above old exposure and profile-only claims.
+- Synonyms map to bounded concepts, preventing repeated keywords from inflating scores.
+- Skills earn trust through duration, assessments, endorsements, and career corroboration.
+- Negated claims are excluded from positive evidence.
 - The system optimizes for recruiter-trustable evidence, not keyword density.
 - Behavioral Redrob signals affect practical hireability.
 - Keyword stuffing and honeypot-like anomalies are penalized.
@@ -135,10 +139,11 @@ flowchart LR
 
 ## Results And Performance
 
-- Unit tests: 23 passing.
-- Full dataset runtime with debug and audit outputs: 111.27 seconds on local CPU.
-- Official validation: `Submission is valid.`
-- Output: exactly 100 ranked candidates with factual reasoning.
+- Tests: 43 passing, including an end-to-end synthetic ranking regression.
+- Labeled 300-candidate evaluation: Precision@75 1.000, Recall@75 1.000, NDCG@75 0.979.
+- Synthetic 10,000-candidate benchmark: 10.55 seconds, about 948 candidates/second.
+- End-to-end CLI contract: 120 inputs generated exactly 100 ranked rows plus debug and audit files.
+- Final full-dataset generation and official validation require the private challenge bundle, which is excluded from Git.
 
 ## Technologies Used
 
