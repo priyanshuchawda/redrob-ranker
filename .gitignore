@@ -17,6 +17,12 @@ submission.csv
 *.csv
 !tests/fixtures/*.csv
 .synthetic-eval*/
+outputs/
+frontend/node_modules/
+frontend/.next/
+frontend/.vercel/
+!data/
+!data/candidates.jsonl
 
 # Local metadata with private contact info
 submission_metadata.yaml
