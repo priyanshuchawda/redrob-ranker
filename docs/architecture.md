@@ -27,6 +27,9 @@ flowchart LR
 - `POST /api/rank/upload` adapts multipart JSONL, JSONL.GZ, JSON, and CSV files into the same deterministic ranking pipeline.
 - `frontend` renders API data and falls back to bundled demo output when the backend is unavailable.
 - `rank.py`, `battlecards.py`, `compare.py`, and `evaluate.py` expose judge-friendly CLI workflows.
+- `src/redrob_ranker/review_tags.py` generates deterministic “why not higher” tags for ranking rows and candidate detail.
+- `src/redrob_ranker/trust_audit.py` summarizes the latest payload for `GET /api/trust-audit` and the Trust Audit UI.
+- `scripts/benchmark_runtime.py` writes CPU-only benchmark reports without network or paid API calls.
 
 ## Determinism
 

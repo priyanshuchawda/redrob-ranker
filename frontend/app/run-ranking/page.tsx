@@ -4,7 +4,8 @@ import { AlertTriangle, FileText, LoaderCircle, Play, Upload } from "lucide-reac
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CandidateTable } from "@/components/CandidateTable";
-import { rankUploadedCandidates } from "@/lib/api";
+import { RoleRequirementMatrix } from "@/components/RoleRequirementMatrix";
+import { demoRanking, rankUploadedCandidates } from "@/lib/api";
 import { demoPayload } from "@/lib/demoData";
 import type { RankingPayload } from "@/lib/types";
 
@@ -16,7 +17,7 @@ export default function RunRankingPage() {
   const [jobFile, setJobFile] = useState<File | null>(null);
   const [candidateFile, setCandidateFile] = useState<File | null>(null);
   const [payload, setPayload] = useState<RankingPayload | null>(null);
-  const [status, setStatus] = useState<"ready" | "running" | "completed" | "fallback">("ready");
+  const [status, setStatus] = useState<"ready" | "running" | "completed" | "fallback" | "demo">("ready");
   const [failureDetail, setFailureDetail] = useState("");
 
   async function runRanking() {
@@ -51,6 +52,15 @@ export default function RunRankingPage() {
     }
   }
 
+  function useDemoScenario() {
+    const demo = demoRanking();
+    setPayload(demo.payload);
+    setJobText("Senior AI Engineer\nMust have: Python, FastAPI, vector search, ranking, evaluation.");
+    setCandidateText("Demo scenario loaded intentionally: CAND_DEMO_001 versus CAND_DEMO_002.");
+    setFailureDetail("");
+    setStatus("demo");
+  }
+
   return (
     <AppShell>
       <div className="mb-6">
@@ -59,6 +69,7 @@ export default function RunRankingPage() {
           {status === "ready" && "Ready"}
           {status === "running" && "Running deterministic ranking"}
           {status === "completed" && "Live ranking completed"}
+          {status === "demo" && "Demo scenario loaded"}
           {status === "fallback" && "Demo fallback active"}
         </p>
       </div>
@@ -102,12 +113,18 @@ export default function RunRankingPage() {
           </label>
         </section>
       </div>
-      <button disabled={status === "running"} onClick={runRanking} className="focus-ring mt-5 inline-flex items-center gap-2 rounded bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
-        {status === "running" ? <LoaderCircle className="animate-spin" size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
-        {status === "running" ? "Ranking" : "Run"}
-      </button>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button disabled={status === "running"} onClick={runRanking} className="focus-ring inline-flex items-center gap-2 rounded bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+          {status === "running" ? <LoaderCircle className="animate-spin" size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+          {status === "running" ? "Ranking" : "Run"}
+        </button>
+        <button type="button" onClick={useDemoScenario} className="focus-ring inline-flex items-center gap-2 rounded border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink">
+          Use Demo Scenario
+        </button>
+      </div>
       {payload && (
-        <div className="mt-6">
+        <div className="mt-6 space-y-6">
+          <RoleRequirementMatrix matrix={payload.role_requirements} />
           <CandidateTable rows={payload.rankings} />
         </div>
       )}

@@ -6,6 +6,7 @@ import { CandidateTable } from "@/components/CandidateTable";
 import { EvidenceLedgerPreview } from "@/components/EvidenceLedgerPreview";
 import { MetricCard } from "@/components/MetricCard";
 import { RiskRadar } from "@/components/RiskRadar";
+import { RoleRequirementMatrix } from "@/components/RoleRequirementMatrix";
 import { ScoreBreakdown } from "@/components/ScoreBreakdown";
 import { useRankingData } from "@/hooks/useRankingData";
 
@@ -35,6 +36,7 @@ export default function DashboardPage() {
             <MetricCard label="High risk" value={highRisk} detail="Profiles requiring review" icon={AlertTriangle} />
             <MetricCard label="Runtime" value={`${payload.metadata.runtime_seconds.toFixed(2)}s`} detail="Backend ranking time" icon={Clock} />
           </div>
+          <RoleRequirementMatrix matrix={payload.role_requirements} />
           <CandidateTable rows={rows} />
           {top && (
             <div className="grid gap-6 lg:grid-cols-[360px_1fr]">

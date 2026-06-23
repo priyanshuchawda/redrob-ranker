@@ -105,3 +105,24 @@ python compare.py --job data/job.txt --candidates data/candidates.jsonl --a CAND
 python evaluate.py --candidates data/candidates.jsonl --ranking outputs/ranked_candidates.json --output outputs/evaluation_report.md
 python -c "from api.main import app; print(app.title)"
 ```
+
+## 2026-06-23 Trust Demo Console Polish Plan
+
+Baseline inspection on the fresh clone confirmed:
+
+- The updated repo already has deterministic JD requirement matrix extraction, product JSON output, evidence ledgers, risk radar, FastAPI multipart upload, Next.js dashboard/run-ranking/candidate/compare pages, demo fallback warning, docs, and 73 passing tests when `TMP`/`TEMP` point to a writable workspace temp folder.
+- The external challenge dataset exists at `D:\Users\pares\Desktop\[PUB] India_runs_data_and_ai_challenge\India_runs_data_and_ai_challenge`.
+- The external full `candidates.jsonl` is large (~487 MB), so polish work will not copy or commit it.
+- The dataset schema is the Redrob challenge schema with `candidate_id`, `profile`, `career_history`, `education`, `skills`, and `redrob_signals`.
+
+Polish implementation scope:
+
+1. Add `review_tags.py` and include deterministic `review_tags` / `review_tag` fields in ranking payload rows and product CSV.
+2. Add `trust_audit.py`, expose `GET /api/trust-audit`, and include a UI Trust Audit page.
+3. Add JD Requirement Matrix UI component and render it on dashboard, run-ranking results, and candidate detail.
+4. Upgrade evidence ledger UI with tabs/filters for positive evidence, negative evidence, missing evidence, and risks.
+5. Add intentional Demo Mode button/state separate from degraded fallback.
+6. Add runtime benchmark script and `docs/performance.md`; generate `outputs/performance_report.md/json` with honest numbers.
+7. Update README, demo script, final report, and technical audit with factual polish details.
+8. Add lightweight tests for review tags, trust audit, payload fields, benchmark tiny run, API route, and frontend source expectations.
+9. Preserve old challenge CSV command and product ranking command.

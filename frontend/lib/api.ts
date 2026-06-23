@@ -1,5 +1,5 @@
 import { demoPayload } from "./demoData";
-import type { ComparisonPayload, RankingPayload } from "./types";
+import type { ComparisonPayload, RankingPayload, TrustAuditPayload } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -15,6 +15,10 @@ export async function fetchRanking(): Promise<{ payload: RankingPayload; source:
   } catch {
     return { payload: demoPayload, source: "demo" };
   }
+}
+
+export function demoRanking(): { payload: RankingPayload; source: "demo" } {
+  return { payload: demoPayload, source: "demo" };
 }
 
 export async function rankUploadedCandidates(formData: FormData): Promise<RankingPayload> {
@@ -40,6 +44,14 @@ export async function compareCandidates(candidateAId: string, candidateBId: stri
     throw new Error(await apiErrorMessage(response, "Comparison API failed"));
   }
   return response.json() as Promise<ComparisonPayload>;
+}
+
+export async function fetchTrustAudit(): Promise<TrustAuditPayload> {
+  const response = await fetch(`${API_BASE}/api/trust-audit`, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "Trust audit API failed"));
+  }
+  return response.json() as Promise<TrustAuditPayload>;
 }
 
 async function apiErrorMessage(response: Response, fallback: string): Promise<string> {

@@ -113,6 +113,47 @@ Open `http://localhost:3000`.
 
 The Recruiter Intelligence Console uses Next.js, TypeScript, and Tailwind CSS. It includes dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. Candidate comparison calls the backend comparison engine and renders score, evidence, risk, and recruiter-verification differences. When live ranking fails, bundled demo output remains available behind a visible degraded-mode warning.
 
+## Judge Demo Proof
+
+Screenshots:
+
+- Add landing page screenshot here after running the local demo.
+- Add JD Requirement Matrix screenshot here after running the local demo.
+- Add Evidence Ledger screenshot here after running the local demo.
+- Add Trust Audit screenshot here after running the local demo.
+
+Demo video:
+
+- Add demo video link here after recording the local walkthrough.
+
+Two-minute path:
+
+1. Open `/dashboard` and show JD Understanding.
+2. Open `/run-ranking` and click `Use Demo Scenario` to show intentional demo mode.
+3. Run live ranking if the backend is available.
+4. Open the leaderboard and point to the `Review Tag` column.
+5. Open `CAND_DEMO_001` and show the full Evidence Ledger.
+6. Open Compare and compare `CAND_DEMO_001` with `CAND_DEMO_002`.
+7. Open Trust Audit and show proof, confidence, missing evidence, and risk counts.
+8. Open Exports and show generated JSON/CSV/battle-card assets.
+
+What is real:
+
+- Deterministic Python ranking engine.
+- JD requirement matrix extraction.
+- Product JSON and legacy CSV outputs.
+- Evidence ledgers, risk radar, review tags, comparison, trust audit, and benchmark script.
+- FastAPI backend and Next.js/Tailwind frontend.
+
+What is proxy:
+
+- Evaluation without labels is proxy only.
+- Demo scenario is intentional sample data, not recruiter accuracy.
+
+Architecture in one line:
+
+`candidate/job files -> deterministic Python engine -> evidence/risk/score payload -> FastAPI -> Recruiter Intelligence Console`.
+
 ## Validation
 
 ```powershell
@@ -160,6 +201,20 @@ See `docs/architecture.md`, `docs/scoring_methodology.md`, `docs/evidence_graph.
 - Proxy evaluation is not real recruiter accuracy.
 - Multipart uploads are buffered in memory before deterministic parsing, so very large files need production hardening.
 - The ranking path remains CPU-only and deterministic by default.
+- The Trust Audit page summarizes the latest in-memory ranking payload; it is not persisted across backend restarts.
+- Browser demo mode is intentionally separate from degraded fallback.
+
+## Runtime Benchmark
+
+```powershell
+python scripts/benchmark_runtime.py --candidates data/candidates.jsonl --job data/job.txt --sizes 100 1000 10000 --output outputs/performance_report.md
+```
+
+Latest local benchmark using the external sample dataset path:
+
+- 100 candidates: 0.314559s, 317.9 candidates/sec.
+- 1000 candidates: 3.027267s, 330.33 candidates/sec.
+- CPU only, no network calls, no paid API.
 
 ## Future Improvements
 

@@ -21,6 +21,7 @@ from redrob_ranker.io import build_product_ranking_output
 from redrob_ranker.job_understanding import default_role_requirements, parse_job_description
 from redrob_ranker.scoring import rank_scored_candidates, score_candidates
 from redrob_ranker.schema import load_candidate_records
+from redrob_ranker.trust_audit import build_trust_audit
 
 
 class RankerService:
@@ -135,6 +136,9 @@ class RankerService:
     def evaluate(self, request: EvaluateRequest) -> dict:
         payload = request.ranking or self.latest_payload()
         return evaluate_payload(payload, labels=request.labels, top_n=request.top_n)
+
+    def trust_audit(self) -> dict:
+        return build_trust_audit(self.latest_payload())
 
     def latest_payload(self) -> dict:
         if self._latest_payload is None:

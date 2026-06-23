@@ -28,6 +28,8 @@ export type RankingRow = {
   hireability_score: number;
   risk_score: number;
   main_reason: string;
+  review_tag: string;
+  review_tags: string[];
   reasons: Record<string, string | string[]>;
   risks: RiskItem[];
   missing_evidence: string[];
@@ -41,6 +43,20 @@ export type RankingRow = {
   components: Record<string, number>;
 };
 
+export type RoleRequirementMatrix = {
+  role_title?: string;
+  must_have_skills?: string[];
+  strong_signal_skills?: string[];
+  good_to_have_skills?: string[];
+  seniority_expectations?: string;
+  domain_expectations?: string;
+  production_expectations?: string;
+  leadership_expectations?: string;
+  location_requirements?: string;
+  availability_requirements?: string;
+  risk_blockers?: string[];
+};
+
 export type RankingPayload = {
   metadata: {
     project: string;
@@ -50,8 +66,25 @@ export type RankingPayload = {
     job_supplied: boolean;
     ranking_uses_role_relevant_evidence_only: boolean;
   };
-  role_requirements: Record<string, unknown>;
+  role_requirements: RoleRequirementMatrix;
   rankings: RankingRow[];
+};
+
+export type TrustAuditPayload = {
+  total_candidates: number;
+  shortlisted_candidates: number;
+  average_confidence: number;
+  average_proof_score: number;
+  high_risk_candidate_count: number;
+  candidates_with_missing_evidence: number;
+  keyword_stuffing_or_weak_proof_count: number;
+  location_or_availability_risk_count: number;
+  low_confidence_count: number;
+  proxy_evaluation_warning: string;
+  score_distribution: Record<string, number>;
+  risk_severity_counts: Record<string, number>;
+  missing_evidence_categories: Record<string, number>;
+  proof_vs_claim_summary: Record<string, number>;
 };
 
 export type ComparisonCandidate = {

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Download, GitCompare, LayoutDashboard, ListChecks, Play, Shield, Users } from "lucide-react";
+import { BarChart3, Download, GitCompare, LayoutDashboard, Play, Shield, ShieldCheck, Users } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/run-ranking", label: "Run Ranking", icon: Play },
   { href: "/candidates", label: "Candidates", icon: Users },
   { href: "/compare", label: "Compare", icon: GitCompare },
+  { href: "/trust-audit", label: "Trust Audit", icon: ShieldCheck },
   { href: "/evaluation", label: "Evaluation", icon: BarChart3 },
   { href: "/exports", label: "Exports", icon: Download }
 ];

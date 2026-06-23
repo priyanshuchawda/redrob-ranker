@@ -23,6 +23,8 @@ export const demoPayload: RankingPayload = {
       hireability_score: 74,
       risk_score: 0,
       main_reason: "Senior AI Engineer has role-relevant evidence in dual encoder retrieval, reranking, and ranking metrics.",
+      review_tag: "No major blocker",
+      review_tags: ["No major blocker"],
       reasons: {
         why_shortlisted: "Career-backed production search and ranking evidence.",
         best_evidence: ["Owned and shipped production semantic search, two-tower candidate matching, cross encoder reranking, NDCG evaluation."],
@@ -65,6 +67,8 @@ export const demoPayload: RankingPayload = {
       hireability_score: 67,
       risk_score: 10,
       main_reason: "ML Platform Engineer has strong production backend proof but weaker ranking evidence.",
+      review_tag: "Weak career backed ranking evidence",
+      review_tags: ["Weak career backed ranking evidence", "Good fit but missing evaluation evidence"],
       reasons: {
         why_shortlisted: "Useful adjacent ML platform and FastAPI production experience.",
         best_evidence: ["Built Python APIs, Kubernetes deployments, model serving, monitoring, and data pipelines."],
@@ -90,6 +94,8 @@ export const demoPayload: RankingPayload = {
       hireability_score: 32,
       risk_score: 84,
       main_reason: "Strong search relevance evidence but target-location risk.",
+      review_tag: "Location risk",
+      review_tags: ["Location risk", "High risk profile"],
       reasons: {
         why_shortlisted: "Search relevance evidence is strong.",
         best_evidence: ["Shipped hybrid search, ranking model evaluation, A/B testing, and retrieval quality dashboards."],
@@ -115,6 +121,8 @@ export const demoPayload: RankingPayload = {
       hireability_score: 36,
       risk_score: 62,
       main_reason: "AI claims are demo-heavy and production retrieval proof is weak.",
+      review_tag: "Strong claims but weak proof",
+      review_tags: ["Strong claims but weak proof", "Missing production proof", "High risk profile"],
       reasons: {
         why_shortlisted: "Relevant AI keywords appear, but proof is weak.",
         best_evidence: ["Candidate lists Python in skills."],

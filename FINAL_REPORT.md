@@ -4,6 +4,10 @@
 
 EvidenceGraph Ranker was upgraded from a CLI challenge ranker into a runnable recruiting intelligence product while preserving the original challenge CSV path.
 
+## 2026-06-23 Trust Demo Console Polish
+
+The polish pass added visible JD Requirement Matrix cards, intentional Demo Mode, review tags, an expanded evidence-ledger panel, a Trust Audit page/API, and a runtime benchmark report. The goal was clarity and trust for judging, not extra ungrounded features.
+
 ## What Changed
 
 - Added deterministic JD requirement matrix extraction and `RoleRequirementMatrix`.
@@ -22,6 +26,11 @@ EvidenceGraph Ranker was upgraded from a CLI challenge ranker into a runnable re
 - Connected the comparison page to the backend comparison engine.
 - Added an explicit warning when live ranking falls back to demo data.
 - Added labeled/proxy evaluation utilities.
+- Added deterministic review tags and “Why not higher” tags.
+- Added `GET /api/trust-audit` and a Trust Audit UI page.
+- Added runtime benchmark script and performance docs.
+- Added visible JD Requirement Matrix sections in dashboard, run-ranking results, and candidate detail.
+- Added intentional Demo Mode separate from degraded fallback.
 
 ## Files Added
 
@@ -46,10 +55,11 @@ Key modifications include `rank.py`, `src/redrob_ranker/models.py`, `src/redrob_
 - Browser check for backend comparison and visible fallback warning.
 - `cd frontend; npm install`
 - `cd frontend; npm run build`
+- `python scripts/benchmark_runtime.py --candidates "D:\Users\pares\Desktop\[PUB] India_runs_data_and_ai_challenge\India_runs_data_and_ai_challenge\sample_candidates.json" --job data\job.txt --sizes 100 1000 --output outputs\performance_report.md`
 
 ## Test Results
 
-`python -m pytest -q` passed with 73 tests.
+`python -m pytest -q` passed with 81 tests after setting `TMP`/`TEMP` to a writable workspace temp folder in this environment.
 
 ## Output Files Generated
 
@@ -63,14 +73,20 @@ Key modifications include `rank.py`, `src/redrob_ranker/models.py`, `src/redrob_
 - `outputs/runtime_summary.json`
 - `outputs/top_candidates_audit.csv`
 - `outputs/comparison_CAND_DEMO_001_vs_CAND_DEMO_002.json`
+- `outputs/performance_report.md`
+- `outputs/performance_report.json`
 
 ## Frontend Status
 
 Complete Next.js, TypeScript, and Tailwind CSS app exists under `frontend/`. `npm run build` passed. The comparison page renders the backend decision response, and the ranking page visibly labels degraded demo fallback.
 
+Latest frontend build passed and includes `/trust-audit`.
+
 ## Backend Status
 
 FastAPI app imports successfully. TestClient health, JSON ranking, comparison, and multipart ranking checks passed. Multipart uploads reuse the existing deterministic ingestion and ranking pipeline.
+
+`GET /api/trust-audit` returns summary counts from the latest ranking payload.
 
 ## Known Limitations
 
@@ -79,10 +95,12 @@ FastAPI app imports successfully. TestClient health, JSON ranking, comparison, a
 - Proxy evaluation is not real recruiter accuracy.
 - Demo fallback uses bundled output and is explicitly labeled when live ranking fails.
 - Product score normalization is practical and bounded, but not calibrated on a real labeled hiring dataset.
+- Trust Audit summarizes latest in-memory payload only.
+- Benchmark uses local duplication of supplied candidate records and is not a production load test.
 
 ## Best Demo Path
 
-Run the product CLI to generate outputs, start FastAPI, start frontend, open Dashboard, inspect `CAND_DEMO_001`, compare it with `CAND_DEMO_002`, and show exports plus battle cards.
+Run the product CLI to generate outputs, start FastAPI, start frontend, open Dashboard, show JD Requirement Matrix, click Use Demo Scenario on Run Ranking, inspect `CAND_DEMO_001`, compare it with `CAND_DEMO_002`, open Trust Audit, and show exports plus battle cards.
 
 ## Manual Setup Still Needed
 
