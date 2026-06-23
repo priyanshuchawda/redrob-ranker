@@ -30,6 +30,14 @@ def test_write_submission_uses_required_header_and_rows(tmp_path) -> None:
     assert written[2] == ["CAND_0000002", "2", "0.8123", "Good adjacent fit."]
 
 
+def test_write_submission_creates_parent_directory(tmp_path) -> None:
+    output = tmp_path / "outputs" / "submission.csv"
+
+    write_submission([RankedCandidate("CAND_0000001", 1, 10.0, "Reason.")], output)
+
+    assert output.exists()
+
+
 def test_write_debug_scores_includes_component_columns(tmp_path) -> None:
     scored = score_candidate(base_candidate())
     output = tmp_path / "debug.csv"

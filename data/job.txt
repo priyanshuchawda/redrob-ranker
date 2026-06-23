@@ -1,0 +1,6 @@
+Senior AI Engineer
+Must have: Python, FastAPI, vector search, ranking, evaluation.
+Strong signals: shipped retrieval systems, candidate matching, production APIs, NDCG evaluation.
+Good to have: Kubernetes, MLOps, recommendation systems.
+5-9 years experience. Location: Pune or Bangalore, India. Notice under 45 days.
+Leadership: mentor engineers and own architecture. Risk blockers: no production ownership, generic AI demos.

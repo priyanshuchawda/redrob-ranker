@@ -1,107 +1,164 @@
-# Redrob EvidenceGraph Ranker
+# EvidenceGraph Ranker
 
-An explainable, CPU-only candidate-ranking engine for the Redrob Intelligent Candidate Discovery challenge. It is calibrated for the provided Senior AI Engineer founding-team role and produces the required top-100 CSV without network calls, hosted models, GPUs, or precomputed embeddings.
+EvidenceGraph Ranker is a deterministic recruiting intelligence product. It keeps the original Redrob challenge CSV ranker and adds JD understanding, flexible ingestion, product JSON output, evidence ledgers, battle cards, candidate comparison, structured risk radar, responsible ranking documentation, a FastAPI backend, and a Next.js Recruiter Intelligence Console.
 
-## Why this approach
+## Why It Is Different
 
-Keyword matching is easy to game. This ranker treats each profile as an evidence graph:
+Most hiring tools improve resume search. EvidenceGraph Ranker improves hiring judgment.
 
-- **Career evidence** proves that a candidate has worked on retrieval, ranking, recommendations, matching, and evaluation.
-- **Production evidence** distinguishes shipped or owned systems from demos, tutorials, and tool lists.
-- **Corroboration** rewards skills only when duration, assessments, endorsements, and career history support them.
-- **Recency** weights current work above old exposure.
-- **Hireability** uses activity, response, notice-period, and logistics signals, but cannot overpower weak job fit.
-- **Risk controls** reject negated claims, keyword stuffing, suspicious zero-duration expertise, non-target ML pivots, stale profiles, and weak logistics.
+It ranks candidates by role fit, proof strength, confidence, hireability, and risk instead of raw resume keyword overlap. Claims such as "Python" in a skill list are separated from proof such as "shipped a production API using Python and FastAPI." Explanations are generated from candidate fields only, or marked unclear.
 
-The result is deterministic and auditable: every score component and explanation comes from candidate fields.
-
-## Quick start
+## Setup
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe rank.py `
-  --candidates "path\to\candidates.jsonl" `
-  --out submission.csv `
-  --debug-out scored_candidates.csv `
-  --audit-out top100_audit.csv
 ```
 
-For MSYS Python on Windows, the executable may be under `.venv\bin\python.exe`.
+## Old Challenge CSV Command
 
-Validate with the challenge bundle:
+This command is preserved:
 
 ```powershell
-python validate.py submission.csv
-python "path\to\validate_submission.py" submission.csv
+python rank.py --candidates candidates.jsonl --out submission.csv
 ```
 
-## Output
+Demo validation:
 
-`submission.csv` contains exactly:
+```powershell
+python rank.py --candidates data/candidates.jsonl --out outputs/submission.csv --top-n 3
+python validate.py outputs/submission.csv --expected-rows 3
+```
+
+The legacy CSV still contains:
 
 ```text
 candidate_id,rank,score,reasoning
 ```
 
-Ranks are deterministic: score descending, then `candidate_id` ascending. Reasoning is template-generated from source facts and does not invent employers, skills, or outcomes.
+## Product Ranking Command
 
-Optional review artifacts:
+```powershell
+python rank.py --job data/job.txt --candidates data/candidates.jsonl --output outputs/ranked_candidates.json --csv-out outputs/ranked_candidates.csv --top-n 50 --audit
+```
 
-- `scored_candidates.csv`: all candidates with component scores, evidence concepts, and risk flags.
-- `top100_audit.csv`: recruiter-oriented A/B/C review of the emitted shortlist.
+Generated product files include:
+
+- `outputs/ranked_candidates.json`
+- `outputs/ranked_candidates.csv`
+- `outputs/evidence_ledgers.json`
+- `outputs/data_quality_report.json`
+- `outputs/runtime_summary.json`
+- `outputs/top_candidates_audit.csv`
+
+## Battle Cards
+
+```powershell
+python battlecards.py --ranking outputs/ranked_candidates.json --output outputs/battlecards.md --top-n 10
+```
+
+## Candidate Comparison
+
+```powershell
+python compare.py --job data/job.txt --candidates data/candidates.jsonl --a CAND_DEMO_001 --b CAND_DEMO_002
+```
+
+## Evaluation
+
+Proxy evaluation without labels:
+
+```powershell
+python evaluate.py --ranking outputs/ranked_candidates.json --output outputs/evaluation_report.md --top-n 4
+```
+
+Real labeled evaluation requires labels:
+
+```powershell
+python evaluate.py --ranking outputs/ranked_candidates.json --labels data/labels.example.json --output outputs/evaluation_report.md --top-n 4
+```
+
+If labels are not supplied, reports are explicitly labeled synthetic/proxy and must not be read as real recruiter accuracy.
+
+## Backend
+
+```powershell
+uvicorn api.main:app --reload
+```
+
+Key endpoints:
+
+- `GET /api/health`
+- `GET /api/demo-data`
+- `POST /api/rank`
+- `GET /api/candidates`
+- `GET /api/candidates/{candidate_id}`
+- `POST /api/compare`
+- `POST /api/evaluate`
+- `GET /api/exports/ranked-json`
+- `GET /api/exports/ranked-csv`
+
+## Frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+The Recruiter Intelligence Console includes dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. It calls the FastAPI backend when available and uses bundled demo output as a local fallback.
+
+## Validation
+
+```powershell
+python -m pytest -q
+python -c "from api.main import app; print(app.title)"
+cd frontend
+npm run build
+```
+
+Current local verification:
+
+- `python -m pytest -q`: 67 passed.
+- Legacy CSV demo command: passed.
+- Local validator on demo CSV: passed.
+- Product ranking command: passed.
+- Battle card command: passed.
+- Comparison command: passed.
+- Proxy evaluation command: passed.
+- FastAPI import and test-client smoke check: passed.
+- `frontend/npm run build`: passed.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A["JSONL / JSONL.GZ"] --> B["Schema-safe streaming"]
-    B --> C["Normalize profile, career, skills, behavior"]
-    C --> D["Concept evidence graph"]
-    D --> E["Production + corroboration + recency"]
-    E --> F["Fit score and risk controls"]
-    F --> G["Deterministic top 100"]
-    G --> H["Grounded explanations"]
-    H --> I["submission.csv"]
-    F --> J["debug and audit CSVs"]
-```
+Core package modules:
 
-Key modules:
+- `features.py`: deterministic evidence extraction.
+- `scoring.py`: calibrated scoring plus optional JD-aware adjustments.
+- `job_understanding.py`: deterministic RoleRequirementMatrix parsing.
+- `schema.py`: flexible candidate ingestion and data quality reporting.
+- `evidence_ledger.py`: claim/proof evidence ledger.
+- `risk.py`: structured risk radar.
+- `reasoning.py`: grounded challenge and product explanations.
+- `comparison.py`: candidate A/B comparison.
+- `battlecards.py`: recruiter battle cards.
+- `evaluation.py`: labeled or proxy evaluation reporting.
 
-- `src/redrob_ranker/features.py`: normalization, concept evidence, recency, production, skills, behavior, logistics, and risk.
-- `src/redrob_ranker/config.py`: transparent scoring calibration.
-- `src/redrob_ranker/scoring.py`: component scoring and deterministic ranking.
-- `src/redrob_ranker/reasoning.py`: factual recruiter-facing explanations.
-- `src/redrob_ranker/io.py`: JSONL/GZIP input and submission/debug/audit writers.
-- `src/redrob_ranker/validation.py`: local output-contract validation.
-- `rank.py`: command-line entrypoint.
+See `docs/architecture.md`, `docs/scoring_methodology.md`, `docs/evidence_graph.md`, `docs/responsible_ranking.md`, and `docs/evaluation.md`.
 
-See [`docs/scoring_methodology.md`](docs/scoring_methodology.md) for the full decision model.
-See [`docs/synthetic_evaluation.md`](docs/synthetic_evaluation.md) for labeled end-to-end ranking results.
+## Limitations
 
-## Verification
+- JD parsing is deterministic and heuristic; it is not an LLM parser.
+- The frontend fallback data is demo-only; live product data comes from FastAPI.
+- Proxy evaluation is not real recruiter accuracy.
+- File upload is implemented in the frontend text/file control and JSON API path; multipart backend upload can be expanded later.
+- The ranking path remains CPU-only and deterministic by default.
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest --rootdir . -q
-```
+## Future Improvements
 
-Verified in this repository:
-
-- 46 tests passing, including an end-to-end synthetic ranking regression.
-- Labeled 300-candidate evaluation: Precision@75 1.000, Recall@75 1.000, NDCG@75 0.979.
-- Larger 1,200-candidate stress run: Precision@300 1.000, Recall@300 1.000, NDCG@300 0.983.
-- Adversarial coverage for negated claims, keyword stuffing, aliases, missing telemetry, stale profiles, logistics, non-target domains, and deterministic ties.
-- End-to-end CLI contract check: 120 JSONL candidates produced 100 ranked rows plus debug and audit files.
-- Full 100,000-candidate challenge run: 202.38 seconds on the current development machine.
-- Synthetic 10,000-candidate benchmark: 10.55 seconds on the current development machine, about 948 candidates/second.
-
-The challenge dataset is intentionally excluded from Git. Run the command above against the private bundle to generate the final `submission.csv` and execute the official validator before upload.
-
-## Design constraints
-
-- Python standard library only on the ranking path.
-- No ranking-time internet access.
-- No GPU requirement.
-- Bounded feature scores prevent repeated keywords from dominating.
-- Missing behavioral fields are treated as unknown, not automatically negative.
-- Duplicate or missing candidate IDs and malformed JSON produce actionable errors.
+- Add richer JD section parsing and configurable scoring profiles.
+- Add persistent run storage for API sessions.
+- Add multipart uploads for large files in the backend.
+- Add visual diff exports for comparison reports.
+- Calibrate product score normalization on a larger labeled benchmark when real labels are available.

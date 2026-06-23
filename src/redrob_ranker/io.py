@@ -7,6 +7,12 @@ from pathlib import Path
 from typing import Iterable, Iterator, Mapping
 
 from .models import RankedCandidate, ScoredCandidate
+from .evidence_ledger import build_evidence_ledger
+from .fairness import fairness_metadata
+from .job_understanding import RoleRequirementMatrix
+from .reasoning import generate_structured_reasoning
+from .risk import build_risk_radar
+from .schema import load_candidate_records
 
 HEADER = ["candidate_id", "rank", "score", "reasoning"]
 DEBUG_HEADER = [
@@ -41,6 +47,10 @@ AUDIT_HEADER = ["candidate_id", "rank", "score", "verdict", "reason", "fix_neede
 
 def iter_candidates(path: str | Path) -> Iterator[dict]:
     candidate_path = Path(path)
+    if candidate_path.suffix.lower() in {".json", ".csv"}:
+        for record in load_candidate_records(candidate_path):
+            yield record.to_scoring_dict()
+        return
     opener = gzip.open if candidate_path.suffix == ".gz" else open
     with opener(candidate_path, "rt", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
@@ -60,6 +70,7 @@ def iter_candidates(path: str | Path) -> Iterator[dict]:
 
 def write_submission(rows: Iterable[RankedCandidate], output_path: str | Path) -> None:
     path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(HEADER)
@@ -69,6 +80,7 @@ def write_submission(rows: Iterable[RankedCandidate], output_path: str | Path) -
 
 def write_debug_scores(rows: Iterable[ScoredCandidate], output_path: str | Path) -> None:
     path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(DEBUG_HEADER)
@@ -112,6 +124,7 @@ def write_audit(
     output_path: str | Path,
 ) -> None:
     path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(AUDIT_HEADER)
@@ -146,3 +159,128 @@ def _audit_verdict(scored: ScoredCandidate) -> tuple[str, str, str]:
     if not moderate_evidence:
         return "B", "Plausible fit; manually review evidence depth.", "review evidence depth"
     return "B", "Plausible fit with one or more calibration concerns.", "; ".join(features.risk_flags)
+
+
+def build_product_ranking_output(
+    scored_rows: Iterable[ScoredCandidate],
+    ranked_rows: Iterable[RankedCandidate],
+    *,
+    role_requirements: RoleRequirementMatrix,
+    top_n: int,
+    runtime_seconds: float,
+    job_supplied: bool,
+    data_quality_report: dict | None = None,
+) -> dict:
+    scored_by_id = {row.candidate_id: row for row in scored_rows}
+    rankings: list[dict] = []
+    ranked_list = list(ranked_rows)
+    for ranked in ranked_list:
+        scored = scored_by_id[ranked.candidate_id]
+        ledger = build_evidence_ledger(scored, ranked.rank)
+        structured = generate_structured_reasoning(scored, ledger)
+        risks = build_risk_radar(scored, role_requirements)
+        rankings.append(
+            {
+                "rank": ranked.rank,
+                "candidate_id": ranked.candidate_id,
+                "final_score": scored.product_scores.final_score,
+                "fit_score": scored.product_scores.fit_score,
+                "proof_score": scored.product_scores.proof_score,
+                "confidence_score": scored.product_scores.confidence_score,
+                "hireability_score": scored.product_scores.hireability_score,
+                "risk_score": scored.product_scores.risk_score,
+                "main_reason": structured["why_shortlisted"],
+                "reasons": structured,
+                "risks": risks,
+                "missing_evidence": ledger["missing_evidence"],
+                "interview_focus": ledger["interview_focus"],
+                "evidence_ledger": ledger,
+                "components": _components_dict(scored),
+            }
+        )
+    return {
+        "metadata": {
+            "project": "EvidenceGraph Ranker",
+            "created_at": _created_at(),
+            "candidate_count": len(scored_by_id),
+            "top_n": top_n,
+            "runtime_seconds": round(runtime_seconds, 4),
+            "job_supplied": job_supplied,
+            **fairness_metadata(),
+        },
+        "role_requirements": role_requirements.to_dict(),
+        "rankings": rankings,
+        "data_quality": data_quality_report or {},
+    }
+
+
+def write_product_outputs(payload: dict, output_dir: str | Path, csv_filename: str = "ranked_candidates.csv") -> None:
+    directory = Path(output_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "ranked_candidates.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    (directory / "evidence_ledgers.json").write_text(
+        json.dumps([row["evidence_ledger"] for row in payload["rankings"]], indent=2),
+        encoding="utf-8",
+    )
+    (directory / "runtime_summary.json").write_text(
+        json.dumps(payload["metadata"], indent=2),
+        encoding="utf-8",
+    )
+    _write_product_csv(payload["rankings"], directory / csv_filename)
+
+
+def write_product_json(payload: dict, output_path: str | Path) -> None:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def write_product_csv(rankings: Iterable[dict], output_path: str | Path) -> None:
+    _write_product_csv(rankings, Path(output_path))
+
+
+def _write_product_csv(rankings: Iterable[dict], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "rank",
+        "candidate_id",
+        "final_score",
+        "fit_score",
+        "proof_score",
+        "confidence_score",
+        "hireability_score",
+        "risk_score",
+        "main_reason",
+    ]
+    with output_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rankings:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _components_dict(scored: ScoredCandidate) -> dict:
+    return {
+        "role": scored.components.role,
+        "seniority": scored.components.seniority,
+        "retrieval": scored.components.retrieval,
+        "ranking": scored.components.ranking,
+        "evaluation": scored.components.evaluation,
+        "profile_evidence": scored.components.profile_evidence,
+        "skills": scored.components.skills,
+        "product": scored.components.product,
+        "production": scored.components.production,
+        "engineering": scored.components.engineering,
+        "leadership": scored.components.leadership,
+        "confidence": scored.components.confidence,
+        "availability": scored.components.availability,
+        "logistics": scored.components.logistics,
+        "risk": scored.components.risk,
+        "total": scored.components.total,
+    }
+
+
+def _created_at() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()

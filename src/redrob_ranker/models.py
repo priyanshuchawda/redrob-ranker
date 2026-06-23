@@ -61,12 +61,23 @@ class ScoreComponents:
 
 
 @dataclass(frozen=True)
+class ProductScores:
+    final_score: float = 0.0
+    fit_score: float = 0.0
+    proof_score: float = 0.0
+    confidence_score: float = 0.0
+    hireability_score: float = 0.0
+    risk_score: float = 0.0
+
+
+@dataclass(frozen=True)
 class ScoredCandidate:
     candidate_id: str
     score: float
     candidate: dict
     features: CandidateFeatures
     components: ScoreComponents
+    product_scores: ProductScores = field(default_factory=ProductScores)
 
 
 @dataclass(frozen=True)
