@@ -53,3 +53,31 @@ export type RankingPayload = {
   role_requirements: Record<string, unknown>;
   rankings: RankingRow[];
 };
+
+export type ComparisonCandidate = {
+  candidate_id: string;
+  final_score: number;
+  fit_score: number;
+  proof_score: number;
+  confidence_score: number;
+  hireability_score: number;
+  risk_score: number;
+};
+
+export type ComparisonPayload = {
+  candidate_a: ComparisonCandidate;
+  candidate_b: ComparisonCandidate;
+  why_a_ranks_above_b: string;
+  where_b_is_stronger: string[];
+  score_component_differences: Record<string, number>;
+  evidence_differences: {
+    a_unique_evidence: string[];
+    b_unique_evidence: string[];
+    shared_evidence: string[];
+    a_missing: string[];
+    b_missing: string[];
+  };
+  risks_for_a: RiskItem[];
+  risks_for_b: RiskItem[];
+  what_to_verify: string[];
+};

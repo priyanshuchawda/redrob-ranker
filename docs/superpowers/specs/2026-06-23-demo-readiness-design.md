@@ -8,7 +8,7 @@ Make the final judge demo use real backend comparison and ranking behavior, expo
 
 The existing JSON endpoints remain backward compatible. A new multipart ranking endpoint accepts a job file or text plus a candidate file, adapts the uploaded records through the existing ingestion layer, and passes the same `RankRequest` into `RankerService`.
 
-The comparison page calls `/api/compare` through the shared frontend API client. It renders the backend response directly: score differences, evidence differences, risks, stronger areas, and verification prompts. Local score subtraction is removed.
+The latest in-memory ranking is exposed through `/api/rank/latest`. The comparison page loads that run, calls `/api/compare` through the shared frontend API client, and renders the backend response directly: score differences, evidence differences, risks, stronger areas, and verification prompts. Local score subtraction is removed.
 
 The run-ranking page uses multipart upload when a candidate file is selected and JSON otherwise. Any API or parsing failure sets a dedicated degraded state with the exact visible warning: "Live ranking failed. Showing demo fallback."
 

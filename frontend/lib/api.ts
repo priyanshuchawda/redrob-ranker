@@ -1,14 +1,11 @@
 import { demoPayload } from "./demoData";
-import type { RankingPayload } from "./types";
+import type { ComparisonPayload, RankingPayload } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
 export async function fetchRanking(): Promise<{ payload: RankingPayload; source: "api" | "demo" }> {
   try {
-    const response = await fetch(`${API_BASE}/api/rank`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ top_n: 50 }),
+    const response = await fetch(`${API_BASE}/api/rank/latest`, {
       cache: "no-store"
     });
     if (!response.ok) {
@@ -20,7 +17,19 @@ export async function fetchRanking(): Promise<{ payload: RankingPayload; source:
   }
 }
 
-export async function compareCandidates(candidateAId: string, candidateBId: string) {
+export async function rankUploadedCandidates(formData: FormData): Promise<RankingPayload> {
+  const response = await fetch(`${API_BASE}/api/rank/upload`, {
+    method: "POST",
+    body: formData,
+    cache: "no-store"
+  });
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "Uploaded ranking failed"));
+  }
+  return response.json() as Promise<RankingPayload>;
+}
+
+export async function compareCandidates(candidateAId: string, candidateBId: string): Promise<ComparisonPayload> {
   const response = await fetch(`${API_BASE}/api/compare`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -28,7 +37,16 @@ export async function compareCandidates(candidateAId: string, candidateBId: stri
     cache: "no-store"
   });
   if (!response.ok) {
-    throw new Error("Comparison API failed");
+    throw new Error(await apiErrorMessage(response, "Comparison API failed"));
   }
-  return response.json();
+  return response.json() as Promise<ComparisonPayload>;
+}
+
+async function apiErrorMessage(response: Response, fallback: string): Promise<string> {
+  try {
+    const payload = (await response.json()) as { detail?: string };
+    return payload.detail || `${fallback} (${response.status})`;
+  } catch {
+    return `${fallback} (${response.status})`;
+  }
 }
