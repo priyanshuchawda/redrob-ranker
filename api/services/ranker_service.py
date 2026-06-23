@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import sys
+import tempfile
 from datetime import date
 from pathlib import Path
 from time import perf_counter
@@ -26,6 +27,7 @@ class RankerService:
     def __init__(self) -> None:
         self._latest_payload: dict[str, Any] | None = None
         self._latest_scored: dict[str, Any] = {}
+        self._latest_role_requirements: RoleRequirementMatrix | None = None
 
     def get_demo_data(self) -> dict:
         return {"job_text": _demo_job_text(), "candidates": _demo_candidates()}
@@ -47,7 +49,52 @@ class RankerService:
         )
         self._latest_payload = payload
         self._latest_scored = {row.candidate_id: row for row in scored}
+        self._latest_role_requirements = matrix
         return payload
+
+    def rank_uploaded_candidates(
+        self,
+        *,
+        candidates_filename: str,
+        candidates_content: bytes,
+        job_text: str | None,
+        job_filename: str | None = None,
+        job_content: bytes | None = None,
+        top_n: int = 50,
+    ) -> dict:
+        if top_n < 1:
+            raise ValueError("top_n must be at least 1")
+        if not candidates_filename:
+            raise ValueError("Candidate upload must include a filename")
+
+        supplied_job_text = job_text
+        if job_content is not None:
+            try:
+                supplied_job_text = job_content.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError(f"Job file {job_filename or ''} must be UTF-8 text") from exc
+
+        suffix = _upload_suffix(candidates_filename)
+        with tempfile.TemporaryDirectory(prefix="evidencegraph-upload-") as temp_dir:
+            candidate_path = Path(temp_dir) / f"candidates{suffix}"
+            candidate_path.write_bytes(candidates_content)
+            try:
+                candidates = [
+                    record.to_scoring_dict()
+                    for record in load_candidate_records(candidate_path)
+                ]
+            except (OSError, ValueError) as exc:
+                raise ValueError(f"Candidate upload could not be parsed: {exc}") from exc
+
+        if not candidates:
+            raise ValueError("Candidate upload did not contain any records")
+        return self.rank(
+            RankRequest(
+                job_text=supplied_job_text,
+                candidates=candidates,
+                top_n=top_n,
+            )
+        )
 
     def list_candidates(self) -> dict:
         payload = self.latest_payload()
@@ -60,6 +107,18 @@ class RankerService:
         return None
 
     def compare(self, request: CompareRequest) -> dict:
+        if (
+            request.candidates is None
+            and request.job_text is None
+            and request.candidate_a_id in self._latest_scored
+            and request.candidate_b_id in self._latest_scored
+        ):
+            return compare_scored_candidates(
+                self._latest_scored[request.candidate_a_id],
+                self._latest_scored[request.candidate_b_id],
+                self._latest_role_requirements or default_role_requirements(),
+            )
+
         matrix = parse_job_description(request.job_text) if request.job_text else default_role_requirements()
         candidates = request.candidates or _load_demo_candidates()
         scored = score_candidates(
@@ -204,4 +263,16 @@ def _demo_candidates() -> list[dict]:
             },
         },
     ]
+
+
+def _upload_suffix(filename: str) -> str:
+    lower_name = filename.lower()
+    if lower_name.endswith(".jsonl.gz"):
+        return ".jsonl.gz"
+    suffix = Path(lower_name).suffix
+    if suffix in {".jsonl", ".ndjson", ".json", ".csv"}:
+        return suffix
+    raise ValueError(
+        "Unsupported candidate upload type. Use JSONL, JSONL.GZ, JSON, or CSV."
+    )
 

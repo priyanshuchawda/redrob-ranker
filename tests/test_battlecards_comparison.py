@@ -33,6 +33,7 @@ def test_comparison_explains_score_and_evidence_differences() -> None:
     assert comparison["candidate_a"]["candidate_id"] == "CAND_A"
     assert comparison["candidate_b"]["candidate_id"] == "CAND_B"
     assert "ranks above" in comparison["why_a_ranks_above_b"]
+    assert "led by total" not in comparison["why_a_ranks_above_b"]
     assert comparison["score_component_differences"]
     assert comparison["evidence_differences"]
     assert comparison["risks_for_a"] == []

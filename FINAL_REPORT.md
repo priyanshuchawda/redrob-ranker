@@ -6,7 +6,7 @@ EvidenceGraph Ranker was upgraded from a CLI challenge ranker into a runnable re
 
 ## What Changed
 
-- Added JD parsing and `RoleRequirementMatrix`.
+- Added deterministic JD requirement matrix extraction and `RoleRequirementMatrix`.
 - Added JD-aware scoring adjustments and normalized product scores.
 - Added flexible ingestion for JSONL, JSONL.GZ, JSON, CSV, and nested records.
 - Added data quality reporting.
@@ -18,6 +18,9 @@ EvidenceGraph Ranker was upgraded from a CLI challenge ranker into a runnable re
 - Added product JSON/CSV outputs.
 - Added FastAPI backend.
 - Added Next.js Recruiter Intelligence Console.
+- Added backend multipart ranking for JSONL, JSONL.GZ, JSON, and CSV files.
+- Connected the comparison page to the backend comparison engine.
+- Added an explicit warning when live ranking falls back to demo data.
 - Added labeled/proxy evaluation utilities.
 
 ## Files Added
@@ -39,12 +42,14 @@ Key modifications include `rank.py`, `src/redrob_ranker/models.py`, `src/redrob_
 - `python evaluate.py --ranking outputs/ranked_candidates.json --output outputs/evaluation_report.md --top-n 4`
 - `python -c "from api.main import app; print(app.title)"`
 - FastAPI TestClient health/rank smoke check.
+- FastAPI multipart JSONL upload check.
+- Browser check for backend comparison and visible fallback warning.
 - `cd frontend; npm install`
 - `cd frontend; npm run build`
 
 ## Test Results
 
-`python -m pytest -q` passed with 67 tests.
+`python -m pytest -q` passed with 73 tests.
 
 ## Output Files Generated
 
@@ -61,18 +66,18 @@ Key modifications include `rank.py`, `src/redrob_ranker/models.py`, `src/redrob_
 
 ## Frontend Status
 
-Complete Next.js app exists under `frontend/`. `npm install` completed after an initial timeout left partial dependency state. `npm run build` passed. Local dev server was started at `http://127.0.0.1:3000`.
+Complete Next.js, TypeScript, and Tailwind CSS app exists under `frontend/`. `npm run build` passed. The comparison page renders the backend decision response, and the ranking page visibly labels degraded demo fallback.
 
 ## Backend Status
 
-FastAPI app imports successfully. TestClient health and rank smoke checks passed. Local backend was started at `http://127.0.0.1:8000`.
+FastAPI app imports successfully. TestClient health, JSON ranking, comparison, and multipart ranking checks passed. Multipart uploads reuse the existing deterministic ingestion and ranking pipeline.
 
 ## Known Limitations
 
-- JD parsing is heuristic and deterministic, not semantic LLM parsing.
-- Backend multipart upload is not implemented; JSON API and frontend text/file parsing are implemented.
+- JD requirement matrix extraction is heuristic and deterministic, not semantic LLM parsing.
+- Multipart uploads are buffered before parsing and are not yet designed for very large production files.
 - Proxy evaluation is not real recruiter accuracy.
-- Demo fallback UI uses bundled demo output when FastAPI is not running.
+- Demo fallback uses bundled output and is explicitly labeled when live ranking fails.
 - Product score normalization is practical and bounded, but not calibrated on a real labeled hiring dataset.
 
 ## Best Demo Path

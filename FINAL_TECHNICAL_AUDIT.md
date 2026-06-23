@@ -8,23 +8,24 @@
 - Evidence Ledger separates claims from proof.
 - Risk Radar maps existing risk logic into structured risk items.
 - FastAPI backend and Next.js frontend are runnable.
+- Frontend comparison is driven by the backend comparison engine.
+- Multipart ranking accepts JSONL, JSONL.GZ, JSON, and CSV candidate files.
 - Evaluation is honestly labeled as labeled or proxy.
 
 ## Missing Features
 
-- Backend multipart file upload is not implemented.
 - No persistent database for ranking runs.
 - No deployed public demo URL is included.
 
 ## Partially Implemented Features
 
-- JD parsing is partially implemented through deterministic heuristics.
-- Frontend demo fallback is bundled and usable, but live uploaded files are parsed client-side and posted as JSON rather than multipart.
+- JD requirement matrix extraction is partially implemented through deterministic heuristics.
+- Multipart files are buffered in memory and should move to streaming/background processing for large production datasets.
 - Product score normalization is useful for UI but should be calibrated further with real labels.
 
 ## Commands That Passed
 
-- `python -m pytest -q`: 67 passed.
+- `python -m pytest -q`: 73 passed.
 - Legacy CSV command on demo data.
 - `validate.py` on demo CSV.
 - Product rank command.
@@ -32,25 +33,28 @@
 - Comparison command.
 - Proxy evaluation command.
 - FastAPI import and TestClient smoke check.
+- Multipart JSONL ranking upload.
+- Live browser comparison using `/api/compare`.
+- Explicit fallback warning with the API unavailable.
 - Frontend `npm run build`.
 
 ## Commands That Failed
 
-- Initial `npm install` timed out and left partial `node_modules`.
-- A second install failed on non-empty partial directories.
-- After deleting only `frontend/node_modules`, npm completed in the background and the build passed.
+- The first isolated-worktree build failed because dependencies were not installed there. `npm ci` restored the lockfile-pinned Next.js 14 toolchain and the build passed.
+- The first browser comparison attempt used port `3010`, outside the documented CORS origin. Verification was rerun successfully on the documented frontend port `3000`.
+- One build attempt timed out while the development server held the same `.next` directory. After stopping the dev server, a clean production build passed.
 
 ## Test Result Summary
 
-67 Python tests pass, including the original 46 plus new product tests for JD parsing, ingestion, normalized scores, evidence ledger, claim/proof separation, risk radar, fairness guard, product output, battle cards, comparison, and API health.
+73 Python tests pass, covering JD parsing, ingestion, normalized scores, evidence ledger, claim/proof separation, risk radar, fairness guard, product output, battle cards, backend comparison integration, latest-run reuse, multipart ranking, fallback signaling, and API health.
 
 ## UI Status
 
-Next.js app includes landing, dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. Production build passed. Local dev server responded with HTTP 200 at `http://127.0.0.1:3000`.
+Next.js, TypeScript, and Tailwind CSS app includes landing, dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. Comparison renders backend-owned score, evidence, risk, and verification differences. Live ranking failure displays a visible demo-fallback warning.
 
 ## API Status
 
-FastAPI app includes health, demo data, rank, candidates, candidate detail, compare, evaluate, and export endpoints. TestClient smoke check passed. Local backend responded with health JSON at `http://127.0.0.1:8000/api/health`.
+FastAPI app includes health, demo data, JSON rank, multipart rank, candidates, candidate detail, compare, evaluate, and export endpoints. Multipart requests flow through the same schema adapter and deterministic ranker as CLI and JSON requests.
 
 ## Ranking Engine Status
 
@@ -65,7 +69,7 @@ Real metric mode is available when labels are supplied. Proxy mode is clearly la
 - Real private challenge data still needs to be run by the team before portal upload.
 - Official validator should be run on the real generated `submission.csv`.
 - Public demo hosting is not configured.
-- Large-file frontend/backend upload UX should be hardened if the judge uses very large files through the UI.
+- Very large file uploads should use streaming storage and background processing instead of in-memory buffering.
 
 ## Exact Recommended Fixes Before Demo
 
@@ -73,4 +77,5 @@ Real metric mode is available when labels are supplied. Proxy mode is clearly la
 2. Run the old challenge command on the final private challenge dataset.
 3. Run the official challenge validator.
 4. Start backend and frontend locally before judge walkthrough.
-5. Use `docs/demo_script.md` for the two-minute flow.
+5. Verify `/api/health`, run one live upload, and compare the top two candidates before the walkthrough.
+6. Use `docs/demo_script.md` for the two-minute flow.

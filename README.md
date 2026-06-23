@@ -90,12 +90,16 @@ Key endpoints:
 - `GET /api/health`
 - `GET /api/demo-data`
 - `POST /api/rank`
+- `GET /api/rank/latest`
+- `POST /api/rank/upload`
 - `GET /api/candidates`
 - `GET /api/candidates/{candidate_id}`
 - `POST /api/compare`
 - `POST /api/evaluate`
 - `GET /api/exports/ranked-json`
 - `GET /api/exports/ranked-csv`
+
+Multipart ranking accepts a candidate file in JSONL, JSONL.GZ, JSON, or CSV format plus either `job_text` or an uploaded UTF-8 job file. The original JSON endpoint remains available.
 
 ## Frontend
 
@@ -107,7 +111,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The Recruiter Intelligence Console includes dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. It calls the FastAPI backend when available and uses bundled demo output as a local fallback.
+The Recruiter Intelligence Console uses Next.js, TypeScript, and Tailwind CSS. It includes dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. Candidate comparison calls the backend comparison engine and renders score, evidence, risk, and recruiter-verification differences. When live ranking fails, bundled demo output remains available behind a visible degraded-mode warning.
 
 ## Validation
 
@@ -120,7 +124,7 @@ npm run build
 
 Current local verification:
 
-- `python -m pytest -q`: 67 passed.
+- `python -m pytest -q`: 73 passed.
 - Legacy CSV demo command: passed.
 - Local validator on demo CSV: passed.
 - Product ranking command: passed.
@@ -128,6 +132,8 @@ Current local verification:
 - Comparison command: passed.
 - Proxy evaluation command: passed.
 - FastAPI import and test-client smoke check: passed.
+- Multipart JSONL ranking upload: passed.
+- Browser comparison and explicit fallback-warning checks: passed.
 - `frontend/npm run build`: passed.
 
 ## Architecture
@@ -136,7 +142,7 @@ Core package modules:
 
 - `features.py`: deterministic evidence extraction.
 - `scoring.py`: calibrated scoring plus optional JD-aware adjustments.
-- `job_understanding.py`: deterministic RoleRequirementMatrix parsing.
+- `job_understanding.py`: deterministic JD requirement matrix extraction.
 - `schema.py`: flexible candidate ingestion and data quality reporting.
 - `evidence_ledger.py`: claim/proof evidence ledger.
 - `risk.py`: structured risk radar.
@@ -149,16 +155,16 @@ See `docs/architecture.md`, `docs/scoring_methodology.md`, `docs/evidence_graph.
 
 ## Limitations
 
-- JD parsing is deterministic and heuristic; it is not an LLM parser.
+- JD requirement matrix extraction is deterministic and heuristic; it is not an LLM parser.
 - The frontend fallback data is demo-only; live product data comes from FastAPI.
 - Proxy evaluation is not real recruiter accuracy.
-- File upload is implemented in the frontend text/file control and JSON API path; multipart backend upload can be expanded later.
+- Multipart uploads are buffered in memory before deterministic parsing, so very large files need production hardening.
 - The ranking path remains CPU-only and deterministic by default.
 
 ## Future Improvements
 
 - Add richer JD section parsing and configurable scoring profiles.
 - Add persistent run storage for API sessions.
-- Add multipart uploads for large files in the backend.
+- Add streaming object storage and background processing for very large uploads.
 - Add visual diff exports for comparison reports.
 - Calibrate product score normalization on a larger labeled benchmark when real labels are available.

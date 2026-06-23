@@ -79,10 +79,13 @@ def _evidence_differences(ledger_a: dict, ledger_b: dict) -> dict:
 
 
 def _why_a_above_b(a: ScoredCandidate, b: ScoredCandidate, diffs: dict) -> str:
-    lead = max((key for key in diffs if key != "risk"), key=lambda key: diffs[key])
+    lead = max(
+        (key for key in diffs if key not in {"risk", "total"}),
+        key=lambda key: diffs[key],
+    )
     return (
         f"Candidate {a.candidate_id} ranks above Candidate {b.candidate_id} because "
-        f"the total score is higher by {diffs['total']:.2f}, led by {lead}."
+        f"the total score is higher by {diffs['total']:.2f}, led by {lead.replace('_', ' ')} evidence."
     )
 
 

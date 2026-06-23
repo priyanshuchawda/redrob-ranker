@@ -23,6 +23,8 @@ flowchart LR
 
 - `src/redrob_ranker` owns business logic.
 - `api/routes` only maps HTTP requests to service methods.
+- `GET /api/rank/latest` exposes the current in-memory run so dashboard and comparison pages stay on the uploaded candidate set.
+- `POST /api/rank/upload` adapts multipart JSONL, JSONL.GZ, JSON, and CSV files into the same deterministic ranking pipeline.
 - `frontend` renders API data and falls back to bundled demo output when the backend is unavailable.
 - `rank.py`, `battlecards.py`, `compare.py`, and `evaluate.py` expose judge-friendly CLI workflows.
 
