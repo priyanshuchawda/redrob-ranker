@@ -14,6 +14,7 @@ from .reasoning import generate_structured_reasoning
 from .review_tags import generate_review_tags, primary_review_tag
 from .risk import build_risk_radar
 from .schema import load_candidate_records
+from .ai_fusion import enrich_payload_with_fallback_ai
 
 HEADER = ["candidate_id", "rank", "score", "reasoning"]
 DEBUG_HEADER = [
@@ -202,7 +203,7 @@ def build_product_ranking_output(
                 "components": _components_dict(scored),
             }
         )
-    return {
+    payload = {
         "metadata": {
             "project": "EvidenceGraph Ranker",
             "created_at": _created_at(),
@@ -216,6 +217,7 @@ def build_product_ranking_output(
         "rankings": rankings,
         "data_quality": data_quality_report or {},
     }
+    return enrich_payload_with_fallback_ai(payload)
 
 
 def write_product_outputs(payload: dict, output_dir: str | Path, csv_filename: str = "ranked_candidates.csv") -> None:

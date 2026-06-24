@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routes import candidates, compare, evaluation, exports, ranking, trust_audit
+from .routes import ai, candidates, compare, evaluation, exports, ranking, trust_audit
 
 
 app = FastAPI(title="EvidenceGraph Ranker API", version="1.0.0")
@@ -33,4 +33,5 @@ app.include_router(compare.router, prefix="/api")
 app.include_router(evaluation.router, prefix="/api")
 app.include_router(exports.router, prefix="/api")
 app.include_router(trust_audit.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 

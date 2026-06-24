@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { AIContextualFitCard, AIRecruiterExplanationCard, SignalFusionCard } from "@/components/AIInsightCards";
 import { EvidenceLedgerPanel } from "@/components/EvidenceLedgerPanel";
 import { RiskRadar } from "@/components/RiskRadar";
 import { RoleRequirementMatrix } from "@/components/RoleRequirementMatrix";
@@ -48,6 +49,9 @@ export default function CandidateDetailPage() {
               </div>
             </section>
           </div>
+          <AIContextualFitCard fit={row.ai_contextual_fit} hiddenGem={row.hidden_gem_candidate} reason={row.hidden_gem_reason} />
+          {row.ai_contextual_fit?.gemini_enabled && <SignalFusionCard summary={row.signal_fusion_summary} />}
+          <AIRecruiterExplanationCard explanation={row.ai_recruiter_explanation} />
           <section>
             <RoleRequirementMatrix matrix={payload?.role_requirements} compact />
           </section>

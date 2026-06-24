@@ -41,6 +41,65 @@ export type RankingRow = {
     risk_flags: RiskItem[];
   };
   components: Record<string, number>;
+  ai_contextual_fit?: AIContextualFit;
+  ai_recruiter_explanation?: AIRecruiterExplanation;
+  hidden_gem_candidate?: boolean;
+  hidden_gem_reason?: string;
+  hidden_gem_evidence?: string[];
+  signal_fusion_summary?: SignalFusionSummary;
+};
+
+export type AIMetadata = {
+  gemini_enabled: boolean;
+  model_used: string;
+  fallback_used: boolean;
+  generated_at: string;
+};
+
+export type AIJDInsight = AIMetadata & {
+  role_archetype: string;
+  must_have_skills: string[];
+  semantic_skill_synonyms: string[];
+  strong_success_signals: string[];
+  seniority_expectations: string[];
+  domain_expectations: string[];
+  negative_signals: string[];
+  hiring_constraints: string[];
+  interview_focus_areas: string[];
+  confidence: number;
+  missing_information: string[];
+};
+
+export type AIContextualFit = AIMetadata & {
+  contextual_fit_score: number;
+  semantic_fit_reason: string;
+  hidden_strengths: string[];
+  weak_context_signals: string[];
+  evidence_supported: string[];
+  evidence_missing: string[];
+  risk_notes: string[];
+  recommended_interview_checks: string[];
+};
+
+export type AIRecruiterExplanation = AIMetadata & {
+  executive_summary: string;
+  why_shortlisted: string[];
+  strongest_evidence: string[];
+  hidden_strengths: string[];
+  concerns: string[];
+  missing_proof: string[];
+  interview_questions: string[];
+  final_recruiter_note: string;
+};
+
+export type SignalFusionSummary = {
+  role_fit: string;
+  proof_strength: string;
+  contextual_relevance: string;
+  activity_or_behavioral_signal: string;
+  hireability: string;
+  risk: string;
+  summary: string;
 };
 
 export type RoleRequirementMatrix = {
@@ -68,6 +127,7 @@ export type RankingPayload = {
   };
   role_requirements: RoleRequirementMatrix;
   rankings: RankingRow[];
+  ai_jd_insight?: AIJDInsight;
 };
 
 export type TrustAuditPayload = {
@@ -85,6 +145,10 @@ export type TrustAuditPayload = {
   risk_severity_counts: Record<string, number>;
   missing_evidence_categories: Record<string, number>;
   proof_vs_claim_summary: Record<string, number>;
+  ai_summary?: AIMetadata & {
+    summary: string;
+    verification_priorities: string[];
+  };
 };
 
 export type ComparisonCandidate = {
@@ -113,4 +177,10 @@ export type ComparisonPayload = {
   risks_for_a: RiskItem[];
   risks_for_b: RiskItem[];
   what_to_verify: string[];
+  ai_semantic_comparison?: AIMetadata & {
+    summary: string;
+    hidden_strengths_difference: string[];
+    risk_difference: string[];
+    interview_checks: string[];
+  };
 };
