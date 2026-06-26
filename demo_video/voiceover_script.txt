@@ -1,0 +1,21 @@
+EvidenceGraph Ranker is a Gemini powered hiring intelligence system built for the Redrob challenge.
+
+Recruiters today are flooded with profiles, and keyword filters often miss the real signal. A candidate can list AI tools, but that does not prove they shipped ranking systems, retrieval pipelines, or production APIs.
+
+Our solution combines Gemini intelligence with EvidenceGraph grounding. Gemini understands the job description, semantic skills, contextual relevance, hidden strengths, and recruiter friendly explanations. EvidenceGraph keeps the final recommendation safe through deterministic scoring, evidence ledgers, risk validation, and audit trails.
+
+The architecture has five main layers. The recruiter console and batch interface sit at the top. FastAPI orchestrates ranking, comparison, trust audit, exports, and AI insight. Gemini is the central reasoning layer. Below it, the evidence grounding layer normalizes candidates, extracts signals, calibrates scores, separates claims from proof, and builds risk radar and review tags.
+
+On the dashboard, the recruiter sees the live ranking run from the FastAPI backend. The job description is converted into a clear role matrix: must-have skills, strong signals, good-to-have skills, seniority, location, availability, and risk blockers. This makes the system’s understanding visible before trusting the shortlist.
+
+The candidate table shows the ranked shortlist with final score, fit, proof, confidence, hireability, risk, review tags, and the main reason. The strongest candidate is not simply the one with the most keywords. It is the candidate with evidence-backed production search, matching, retrieval, and evaluation proof.
+
+On candidate detail, the recruiter can inspect the score breakdown, reasoning, evidence ledger, risk flags, missing proof, and interview focus. Gemini adds contextual fit and recruiter explanation, while EvidenceGraph keeps every claim grounded in supplied candidate data.
+
+The Trust Audit page is where the system becomes honest. It shows proxy warnings, high-risk counts, low-confidence candidates, score distribution, missing evidence categories, and verification priorities. If evidence is missing, the system says it is missing instead of inventing it.
+
+The product also exports challenge-ready and recruiter-ready assets: submission CSV, ranked JSON, evidence ledgers, battle cards, comparison output, evaluation reports, and performance reports.
+
+We verified the system with ninety passing Python tests, a passing Next.js production build, valid legacy CSV output, and product ranking output. The deterministic ranker runs on CPU and processed one thousand candidates in about one point six seconds in benchmark testing.
+
+EvidenceGraph Ranker is better than traditional candidate matching because it does not just search resumes. It converts hiring data into evidence-backed recruiter judgment: context from Gemini, proof from career data, risk validation, and a shortlist that recruiters can actually trust.
