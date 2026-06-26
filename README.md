@@ -1,6 +1,6 @@
 # EvidenceGraph Ranker
 
-EvidenceGraph Ranker is a deterministic recruiting intelligence product. It keeps the original Redrob challenge CSV ranker and adds JD understanding, flexible ingestion, product JSON output, evidence ledgers, battle cards, candidate comparison, structured risk radar, responsible ranking documentation, a FastAPI backend, and a Next.js Recruiter Intelligence Console.
+EvidenceGraph Ranker is a hybrid recruiting intelligence product. It keeps the original deterministic Redrob challenge CSV ranker and adds JD understanding, flexible ingestion, product JSON output, evidence ledgers, battle cards, candidate comparison, structured risk radar, responsible ranking documentation, a FastAPI backend, a Next.js Recruiter Intelligence Console, and an optional Gemini assisted insight layer.
 
 ## Why It Is Different
 
@@ -8,12 +8,60 @@ Most hiring tools improve resume search. EvidenceGraph Ranker improves hiring ju
 
 It ranks candidates by role fit, proof strength, confidence, hireability, and risk instead of raw resume keyword overlap. Claims such as "Python" in a skill list are separated from proof such as "shipped a production API using Python and FastAPI." Explanations are generated from candidate fields only, or marked unclear.
 
+Product line for judges:
+
+> Gemini Flash Lite provides AI assisted JD understanding and contextual relevance. EvidenceGraph keeps ranking grounded through deterministic scoring, evidence ledgers and risk validation.
+
 ## Setup
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
+
+## Optional Gemini Assisted Insight
+
+Gemini is optional. The deterministic ranker remains the primary ranking backbone for auditability, repeatability and speed. Gemini only adds assistive JD insight, contextual relevance, hidden-gem reasoning, signal-fusion summaries and recruiter explanations. It does not silently overwrite `final_score`, rank order, evidence ledgers or risk validation.
+
+Model:
+
+```text
+gemini-3.1-flash-lite
+```
+
+SDK:
+
+```text
+google-genai
+```
+
+Environment variables:
+
+```powershell
+$env:GEMINI_API_KEY="your-key-here"
+$env:GEMINI_MODEL="gemini-3.1-flash-lite"
+$env:GEMINI_ENABLED="true"
+```
+
+Default safe mode:
+
+```powershell
+$env:GEMINI_ENABLED="false"
+```
+
+No secrets should be committed. The code reads the API key only from `GEMINI_API_KEY`. If Gemini is disabled, unavailable, missing an API key, or returns invalid JSON, EvidenceGraph returns deterministic fallback JSON with metadata:
+
+- `gemini_enabled`
+- `model_used`
+- `fallback_used`
+- `generated_at`
+
+Important wording:
+
+- Say “Gemini assisted insight”.
+- Do not say “Gemini generated the final ranking”.
+- Do not say “AI guarantees best candidate”.
+- Final ranking remains evidence weighted and auditable.
 
 ## Old Challenge CSV Command
 
@@ -98,6 +146,11 @@ Key endpoints:
 - `POST /api/evaluate`
 - `GET /api/exports/ranked-json`
 - `GET /api/exports/ranked-csv`
+- `POST /api/ai/jd-insight`
+- `POST /api/ai/contextual-fit`
+- `POST /api/ai/recruiter-explanation`
+- `POST /api/ai/hidden-gems`
+- `POST /api/ai/signal-fusion-summary`
 
 Multipart ranking accepts a candidate file in JSONL, JSONL.GZ, JSON, or CSV format plus either `job_text` or an uploaded UTF-8 job file. The original JSON endpoint remains available.
 
@@ -113,6 +166,47 @@ Open `http://localhost:3000`.
 
 The Recruiter Intelligence Console uses Next.js, TypeScript, and Tailwind CSS. It includes dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. Candidate comparison calls the backend comparison engine and renders score, evidence, risk, and recruiter-verification differences. When live ranking fails, bundled demo output remains available behind a visible degraded-mode warning.
 
+## Judge Demo Proof
+
+Screenshots:
+
+- Add landing page screenshot here after running the local demo.
+- Add JD Requirement Matrix screenshot here after running the local demo.
+- Add Evidence Ledger screenshot here after running the local demo.
+- Add Trust Audit screenshot here after running the local demo.
+
+Demo video:
+
+- Add demo video link here after recording the local walkthrough.
+
+Two-minute path:
+
+1. Open `/dashboard` and show JD Understanding.
+2. Open `/run-ranking` and click `Use Demo Scenario` to show intentional demo mode.
+3. Run live ranking if the backend is available.
+4. Open the leaderboard and point to the `Review Tag` column.
+5. Open `CAND_DEMO_001` and show the full Evidence Ledger.
+6. Open Compare and compare `CAND_DEMO_001` with `CAND_DEMO_002`.
+7. Open Trust Audit and show proof, confidence, missing evidence, and risk counts.
+8. Open Exports and show generated JSON/CSV/battle-card assets.
+
+What is real:
+
+- Deterministic Python ranking engine.
+- JD requirement matrix extraction.
+- Product JSON and legacy CSV outputs.
+- Evidence ledgers, risk radar, review tags, comparison, trust audit, and benchmark script.
+- FastAPI backend and Next.js/Tailwind frontend.
+
+What is proxy:
+
+- Evaluation without labels is proxy only.
+- Demo scenario is intentional sample data, not recruiter accuracy.
+
+Architecture in one line:
+
+`candidate/job files -> deterministic Python engine -> evidence/risk/score payload -> FastAPI -> Recruiter Intelligence Console`.
+
 ## Validation
 
 ```powershell
@@ -124,7 +218,7 @@ npm run build
 
 Current local verification:
 
-- `python -m pytest -q`: 73 passed.
+- `python -m pytest -q`: run before submission; current suite includes Gemini-disabled fallback and mocked Gemini tests.
 - Legacy CSV demo command: passed.
 - Local validator on demo CSV: passed.
 - Product ranking command: passed.
@@ -155,11 +249,25 @@ See `docs/architecture.md`, `docs/scoring_methodology.md`, `docs/evidence_graph.
 
 ## Limitations
 
-- JD requirement matrix extraction is deterministic and heuristic; it is not an LLM parser.
+- JD requirement matrix extraction is deterministic and heuristic; Gemini assisted insight is optional and separate.
 - The frontend fallback data is demo-only; live product data comes from FastAPI.
 - Proxy evaluation is not real recruiter accuracy.
 - Multipart uploads are buffered in memory before deterministic parsing, so very large files need production hardening.
 - The ranking path remains CPU-only and deterministic by default.
+- The Trust Audit page summarizes the latest in-memory ranking payload; it is not persisted across backend restarts.
+- Browser demo mode is intentionally separate from degraded fallback.
+
+## Runtime Benchmark
+
+```powershell
+python scripts/benchmark_runtime.py --candidates data/candidates.jsonl --job data/job.txt --sizes 100 1000 10000 --output outputs/performance_report.md
+```
+
+Latest local benchmark using the external sample dataset path:
+
+- 100 candidates: 0.314559s, 317.9 candidates/sec.
+- 1000 candidates: 3.027267s, 330.33 candidates/sec.
+- CPU only, no network calls, no paid API.
 
 ## Future Improvements
 

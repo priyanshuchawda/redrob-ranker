@@ -2,8 +2,10 @@
 
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
-import { EvidenceLedgerPreview } from "@/components/EvidenceLedgerPreview";
+import { AIContextualFitCard, AIRecruiterExplanationCard, SignalFusionCard } from "@/components/AIInsightCards";
+import { EvidenceLedgerPanel } from "@/components/EvidenceLedgerPanel";
 import { RiskRadar } from "@/components/RiskRadar";
+import { RoleRequirementMatrix } from "@/components/RoleRequirementMatrix";
 import { ScoreBreakdown } from "@/components/ScoreBreakdown";
 import { useRankingData } from "@/hooks/useRankingData";
 
@@ -47,13 +49,22 @@ export default function CandidateDetailPage() {
               </div>
             </section>
           </div>
+          <AIContextualFitCard fit={row.ai_contextual_fit} hiddenGem={row.hidden_gem_candidate} reason={row.hidden_gem_reason} />
+          {row.ai_contextual_fit?.gemini_enabled && <SignalFusionCard summary={row.signal_fusion_summary} />}
+          <AIRecruiterExplanationCard explanation={row.ai_recruiter_explanation} />
           <section>
-            <h2 className="mb-3 text-base font-semibold text-ink">Positive evidence</h2>
-            <EvidenceLedgerPreview evidence={row.evidence_ledger.positive_evidence} />
+            <RoleRequirementMatrix matrix={payload?.role_requirements} compact />
           </section>
+          <EvidenceLedgerPanel row={row} />
           <section>
             <h2 className="mb-3 text-base font-semibold text-ink">Risk flags</h2>
             <RiskRadar risks={row.risks} />
+          </section>
+          <section className="rounded-lg border border-line bg-white p-5 shadow-panel">
+            <h2 className="text-base font-semibold text-ink">Why not higher</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {row.review_tags.map((tag) => <span key={tag} className="rounded bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">{tag}</span>)}
+            </div>
           </section>
           <section className="rounded-lg border border-line bg-white p-5 shadow-panel">
             <h2 className="text-base font-semibold text-ink">Missing evidence</h2>

@@ -11,8 +11,10 @@ from .evidence_ledger import build_evidence_ledger
 from .fairness import fairness_metadata
 from .job_understanding import RoleRequirementMatrix
 from .reasoning import generate_structured_reasoning
+from .review_tags import generate_review_tags, primary_review_tag
 from .risk import build_risk_radar
 from .schema import load_candidate_records
+from .ai_fusion import enrich_payload_with_fallback_ai
 
 HEADER = ["candidate_id", "rank", "score", "reasoning"]
 DEBUG_HEADER = [
@@ -179,6 +181,7 @@ def build_product_ranking_output(
         ledger = build_evidence_ledger(scored, ranked.rank)
         structured = generate_structured_reasoning(scored, ledger)
         risks = build_risk_radar(scored, role_requirements)
+        review_tags = generate_review_tags(scored, ledger)
         rankings.append(
             {
                 "rank": ranked.rank,
@@ -192,13 +195,15 @@ def build_product_ranking_output(
                 "main_reason": structured["why_shortlisted"],
                 "reasons": structured,
                 "risks": risks,
+                "review_tag": primary_review_tag(scored, ledger),
+                "review_tags": review_tags,
                 "missing_evidence": ledger["missing_evidence"],
                 "interview_focus": ledger["interview_focus"],
                 "evidence_ledger": ledger,
                 "components": _components_dict(scored),
             }
         )
-    return {
+    payload = {
         "metadata": {
             "project": "EvidenceGraph Ranker",
             "created_at": _created_at(),
@@ -212,6 +217,7 @@ def build_product_ranking_output(
         "rankings": rankings,
         "data_quality": data_quality_report or {},
     }
+    return enrich_payload_with_fallback_ai(payload)
 
 
 def write_product_outputs(payload: dict, output_dir: str | Path, csv_filename: str = "ranked_candidates.csv") -> None:
@@ -250,6 +256,7 @@ def _write_product_csv(rankings: Iterable[dict], output_path: Path) -> None:
         "confidence_score",
         "hireability_score",
         "risk_score",
+        "review_tag",
         "main_reason",
     ]
     with output_path.open("w", encoding="utf-8", newline="") as handle:

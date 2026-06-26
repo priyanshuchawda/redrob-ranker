@@ -8,7 +8,7 @@ export function CandidateTable({ rows }: { rows: RankingRow[] }) {
         <table className="min-w-full divide-y divide-line text-sm">
           <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-normal text-slate-500">
             <tr>
-              {["Rank", "Candidate", "Final", "Fit", "Proof", "Confidence", "Hireability", "Risk", "Main reason"].map((header) => (
+              {["Rank", "Candidate", "Final", "Fit", "Proof", "Confidence", "Hireability", "Risk", "Review Tag", "Main reason"].map((header) => (
                 <th key={header} className="px-4 py-3">{header}</th>
               ))}
             </tr>
@@ -31,6 +31,9 @@ export function CandidateTable({ rows }: { rows: RankingRow[] }) {
                   <span className={`rounded px-2 py-1 text-xs ${row.risk_score >= 50 ? "bg-red-50 text-risk" : "bg-emerald-50 text-teal"}`}>
                     {row.risk_score >= 50 ? "High" : row.risk_score >= 20 ? "Review" : "Low"}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">{row.review_tag}</span>
                 </td>
                 <td className="min-w-80 px-4 py-3 text-slate-600">{row.main_reason}</td>
               </tr>

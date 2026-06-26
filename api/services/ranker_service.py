@@ -21,6 +21,8 @@ from redrob_ranker.io import build_product_ranking_output
 from redrob_ranker.job_understanding import default_role_requirements, parse_job_description
 from redrob_ranker.scoring import rank_scored_candidates, score_candidates
 from redrob_ranker.schema import load_candidate_records
+from redrob_ranker.trust_audit import build_trust_audit
+from api.services.gemini_service import gemini_service
 
 
 class RankerService:
@@ -47,6 +49,7 @@ class RankerService:
             runtime_seconds=perf_counter() - started,
             job_supplied=bool(request.job_text),
         )
+        payload = gemini_service.enrich_payload(payload, job_text=request.job_text)
         self._latest_payload = payload
         self._latest_scored = {row.candidate_id: row for row in scored}
         self._latest_role_requirements = matrix
@@ -113,11 +116,12 @@ class RankerService:
             and request.candidate_a_id in self._latest_scored
             and request.candidate_b_id in self._latest_scored
         ):
-            return compare_scored_candidates(
+            comparison = compare_scored_candidates(
                 self._latest_scored[request.candidate_a_id],
                 self._latest_scored[request.candidate_b_id],
                 self._latest_role_requirements or default_role_requirements(),
             )
+            return _add_ai_semantic_comparison(comparison, self.latest_payload())
 
         matrix = parse_job_description(request.job_text) if request.job_text else default_role_requirements()
         candidates = request.candidates or _load_demo_candidates()
@@ -128,13 +132,28 @@ class RankerService:
         )
         by_id = {row.candidate_id: row for row in scored}
         try:
-            return compare_scored_candidates(by_id[request.candidate_a_id], by_id[request.candidate_b_id], matrix)
+            comparison = compare_scored_candidates(by_id[request.candidate_a_id], by_id[request.candidate_b_id], matrix)
+            payload = build_product_ranking_output(
+                scored,
+                rank_scored_candidates(scored, top_n=len(scored)),
+                role_requirements=matrix,
+                top_n=len(scored),
+                runtime_seconds=0,
+                job_supplied=bool(request.job_text),
+            )
+            payload = gemini_service.enrich_payload(payload, job_text=request.job_text)
+            return _add_ai_semantic_comparison(comparison, payload)
         except KeyError as exc:
             raise ValueError(f"Candidate id not found: {exc.args[0]}") from exc
 
     def evaluate(self, request: EvaluateRequest) -> dict:
         payload = request.ranking or self.latest_payload()
         return evaluate_payload(payload, labels=request.labels, top_n=request.top_n)
+
+    def trust_audit(self) -> dict:
+        audit = build_trust_audit(self.latest_payload())
+        audit["ai_summary"] = gemini_service.trust_audit_ai_summary(audit)
+        return audit
 
     def latest_payload(self) -> dict:
         if self._latest_payload is None:
@@ -275,4 +294,22 @@ def _upload_suffix(filename: str) -> str:
     raise ValueError(
         "Unsupported candidate upload type. Use JSONL, JSONL.GZ, JSON, or CSV."
     )
+
+
+def _add_ai_semantic_comparison(comparison: dict, payload: dict) -> dict:
+    rows = {row.get("candidate_id"): row for row in payload.get("rankings", [])}
+    a = rows.get((comparison.get("candidate_a") or {}).get("candidate_id"), {})
+    b = rows.get((comparison.get("candidate_b") or {}).get("candidate_id"), {})
+    comparison["ai_semantic_comparison"] = {
+        **gemini_service.signal_fusion_summary(payload),
+        "summary": "Gemini assisted insight compares contextual strengths separately from deterministic ranking.",
+        "hidden_strengths_difference": list((a.get("ai_contextual_fit") or {}).get("hidden_strengths") or [])
+        + list((b.get("ai_contextual_fit") or {}).get("hidden_strengths") or []),
+        "risk_difference": [
+            *(risk.get("explanation", "") for risk in a.get("risks", []) if isinstance(risk, dict)),
+            *(risk.get("explanation", "") for risk in b.get("risks", []) if isinstance(risk, dict)),
+        ],
+        "interview_checks": list(comparison.get("what_to_verify") or []),
+    }
+    return comparison
 

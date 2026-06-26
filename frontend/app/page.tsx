@@ -19,6 +19,9 @@ export default function LandingPage() {
               <Link href="/run-ranking" className="focus-ring inline-flex items-center gap-2 rounded border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink">
                 Run ranking
               </Link>
+              <Link href="/run-ranking" className="focus-ring inline-flex items-center gap-2 rounded border border-teal/30 bg-teal/10 px-4 py-2.5 text-sm font-semibold text-teal">
+                Use Demo Scenario
+              </Link>
             </div>
           </div>
           <div className="rounded-lg border border-line bg-slatePanel p-5 text-white shadow-panel">
