@@ -1,0 +1,26 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+    <style>
+      .kicker{font:700 30px Arial,sans-serif;fill:#93c5fd;letter-spacing:.08em}
+      .title{font:800 86px Arial,sans-serif;fill:#f8fafc}
+      .sub{font:500 36px Arial,sans-serif;fill:#cbd5e1}
+      .pill{font:700 28px Arial,sans-serif;fill:#dbeafe}
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <circle cx="1530" cy="180" r="260" fill="#7c3aed" opacity=".16"/>
+  <circle cx="260" cy="900" r="320" fill="#14b8a6" opacity=".14"/>
+  <text x="140" y="220" class="kicker">REDROB AI RANKING CHALLENGE</text>
+  <text x="140" y="350" class="title">EvidenceGraph Ranker</text>
+  <text x="140" y="420" class="sub">Gemini-powered, evidence-grounded candidate ranking</text>
+  <rect x="140" y="520" width="520" height="72" rx="36" fill="#1e3a8a" stroke="#60a5fa"/>
+  <text x="176" y="568" class="pill">Context • Proof • Risk • Trust</text>
+  <rect x="1290" y="675" width="420" height="190" rx="28" fill="#0f172a" stroke="#334155"/>
+  <text x="1340" y="750" class="sub">Built for recruiters</text>
+  <text x="1340" y="810" class="sub">Validated for judges</text>
+</svg>
