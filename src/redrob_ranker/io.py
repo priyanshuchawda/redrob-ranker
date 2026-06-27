@@ -71,13 +71,28 @@ def iter_candidates(path: str | Path) -> Iterator[dict]:
 
 
 def write_submission(rows: Iterable[RankedCandidate], output_path: str | Path) -> None:
+    rows = list(rows)
+    submission_scores = _submission_scores(rows)
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(HEADER)
-        for row in rows:
-            writer.writerow([row.candidate_id, row.rank, f"{row.score:.4f}", row.reasoning])
+        for row, score in zip(rows, submission_scores):
+            writer.writerow([row.candidate_id, row.rank, f"{score:.4f}", row.reasoning])
+
+
+def _submission_scores(rows: list[RankedCandidate]) -> list[float]:
+    if not rows:
+        return []
+    if max(row.score for row in rows) <= 1.0:
+        return [row.score for row in rows]
+    if len(rows) == 1:
+        return [1.0]
+    return [
+        max(0.0, min(1.0, 0.99 - ((row.rank - 1) * (0.98 / (len(rows) - 1)))))
+        for row in rows
+    ]
 
 
 def write_debug_scores(rows: Iterable[ScoredCandidate], output_path: str | Path) -> None:

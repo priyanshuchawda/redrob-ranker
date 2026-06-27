@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+import heapq
 import re
 from dataclasses import replace
 from typing import Iterable, Mapping
@@ -132,6 +133,36 @@ def rank_candidates(
     )
 
 
+def rank_candidates_streaming(
+    candidates: Iterable[Mapping],
+    reference_date: date | None = None,
+    top_n: int = 100,
+    role_requirements: RoleRequirementMatrix | None = None,
+) -> list[RankedCandidate]:
+    if top_n <= 0:
+        raise ValueError("top_n must be greater than zero")
+
+    heap: list[tuple[float, tuple[int, ...], ScoredCandidate]] = []
+    seen_ids: set[str] = set()
+    for candidate in candidates:
+        item = score_candidate(candidate, reference_date=reference_date, role_requirements=role_requirements)
+        if item.candidate_id in seen_ids:
+            raise ValueError(f"Duplicate candidate_id: {item.candidate_id}")
+        seen_ids.add(item.candidate_id)
+        heap_key = (item.score, _reverse_lex_key(item.candidate_id))
+        entry = (*heap_key, item)
+        if len(heap) < top_n:
+            heapq.heappush(heap, entry)
+        elif heap_key > heap[0][:2]:
+            heapq.heapreplace(heap, entry)
+
+    if len(heap) < top_n:
+        raise ValueError(f"requested top_n {top_n}, but only {len(heap)} candidates were loaded")
+
+    top_scored = [entry[2] for entry in heap]
+    return rank_scored_candidates(top_scored, top_n=top_n)
+
+
 def rank_scored_candidates(
     scored: Iterable[ScoredCandidate],
     top_n: int = 100,
@@ -152,6 +183,10 @@ def rank_scored_candidates(
             )
         )
     return ranked
+
+
+def _reverse_lex_key(value: str) -> tuple[int, ...]:
+    return tuple(-ord(char) for char in value)
 
 
 def apply_role_requirements_adjustments(

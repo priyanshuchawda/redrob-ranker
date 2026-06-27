@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any
 
 
@@ -24,7 +23,6 @@ def uses_role_relevant_evidence_only() -> bool:
 
 
 def strip_protected_attributes(candidate: dict) -> tuple[dict, list[str]]:
-    cleaned = deepcopy(candidate)
     ignored: list[str] = []
 
     def scrub(value: Any, path: str = "") -> Any:
@@ -41,7 +39,7 @@ def strip_protected_attributes(candidate: dict) -> tuple[dict, list[str]]:
             return [scrub(item, path) for item in value]
         return value
 
-    return scrub(cleaned), list(dict.fromkeys(ignored))
+    return scrub(candidate), list(dict.fromkeys(ignored))
 
 
 def fairness_metadata() -> dict:

@@ -2,7 +2,6 @@
 
 import { AlertTriangle, Clock, Gauge, ShieldCheck, Users } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { AIJDInsightCard, SignalFusionCard } from "@/components/AIInsightCards";
 import { CandidateTable } from "@/components/CandidateTable";
 import { EvidenceLedgerPreview } from "@/components/EvidenceLedgerPreview";
 import { MetricCard } from "@/components/MetricCard";
@@ -37,8 +36,6 @@ export default function DashboardPage() {
             <MetricCard label="High risk" value={highRisk} detail="Profiles requiring review" icon={AlertTriangle} />
             <MetricCard label="Runtime" value={`${payload.metadata.runtime_seconds.toFixed(2)}s`} detail="Backend ranking time" icon={Clock} />
           </div>
-          <AIJDInsightCard insight={payload.ai_jd_insight} />
-          {top?.ai_contextual_fit?.gemini_enabled && <SignalFusionCard summary={top.signal_fusion_summary} />}
           <RoleRequirementMatrix matrix={payload.role_requirements} />
           <CandidateTable rows={rows} />
           {top && (

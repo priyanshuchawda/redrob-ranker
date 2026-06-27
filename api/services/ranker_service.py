@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import csv
+import html
 import io
 import sys
 import tempfile
+import zipfile
 from datetime import date
 from pathlib import Path
 from time import perf_counter
@@ -72,10 +74,7 @@ class RankerService:
 
         supplied_job_text = job_text
         if job_content is not None:
-            try:
-                supplied_job_text = job_content.decode("utf-8")
-            except UnicodeDecodeError as exc:
-                raise ValueError(f"Job file {job_filename or ''} must be UTF-8 text") from exc
+            supplied_job_text = _read_uploaded_job_text(job_filename or "", job_content)
 
         suffix = _upload_suffix(candidates_filename)
         with tempfile.TemporaryDirectory(prefix="evidencegraph-upload-") as temp_dir:
@@ -91,13 +90,24 @@ class RankerService:
 
         if not candidates:
             raise ValueError("Candidate upload did not contain any records")
-        return self.rank(
+        payload = self.rank(
             RankRequest(
                 job_text=supplied_job_text,
                 candidates=candidates,
-                top_n=top_n,
+                top_n=min(top_n, len(candidates)),
             )
         )
+        payload["metadata"]["input_pipeline"] = {
+            "candidate_file": candidates_filename,
+            "candidate_file_type": suffix.lstrip("."),
+            "candidate_records_loaded": len(candidates),
+            "job_source": job_filename or ("typed job description" if supplied_job_text else "default role matrix"),
+            "top_n_requested": top_n,
+            "top_n_emitted": len(payload.get("rankings", [])),
+            "supported_candidate_inputs": ["csv", "json", "jsonl", "ndjson", "jsonl.gz"],
+            "supported_job_inputs": ["typed text", "txt", "md", "docx"],
+        }
+        return payload
 
     def list_candidates(self) -> dict:
         payload = self.latest_payload()
@@ -181,6 +191,26 @@ class RankerService:
         for row in payload.get("rankings", []):
             writer.writerow({field: row.get(field, "") for field in writer.fieldnames})
         return handle.getvalue()
+
+    def latest_submission_csv(self) -> str:
+        rows = list(self.latest_payload().get("rankings", []))
+        handle = io.StringIO()
+        writer = csv.DictWriter(handle, fieldnames=["candidate_id", "rank", "score", "reasoning"])
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(
+                {
+                    "candidate_id": row.get("candidate_id", ""),
+                    "rank": row.get("rank", ""),
+                    "score": f"{_submission_score(int(row.get('rank') or 1), len(rows)):.4f}",
+                    "reasoning": row.get("main_reason", ""),
+                }
+            )
+        return handle.getvalue()
+
+    def latest_submission_xlsx(self) -> bytes:
+        rows = list(csv.reader(io.StringIO(self.latest_submission_csv())))
+        return _xlsx_from_rows(rows)
 
 
 def _load_demo_candidates() -> list[dict]:
@@ -294,6 +324,121 @@ def _upload_suffix(filename: str) -> str:
     raise ValueError(
         "Unsupported candidate upload type. Use JSONL, JSONL.GZ, JSON, or CSV."
     )
+
+
+def _read_uploaded_job_text(filename: str, content: bytes) -> str:
+    lower_name = filename.lower()
+    if lower_name.endswith(".docx"):
+        try:
+            from docx import Document
+        except ImportError as exc:
+            raise ValueError("DOCX job uploads require python-docx. Install requirements.txt.") from exc
+        doc = Document(io.BytesIO(content))
+        parts: list[str] = []
+        for paragraph in doc.paragraphs:
+            text = paragraph.text.strip()
+            if text:
+                parts.append(text)
+        for table in doc.tables:
+            for row in table.rows:
+                cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                if cells:
+                    parts.append(" | ".join(cells))
+        return "\n".join(parts)
+    if Path(lower_name).suffix not in {".txt", ".md", ""}:
+        raise ValueError("Unsupported job upload type. Use TXT, MD, DOCX, or paste the job description.")
+    try:
+        return content.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"Job file {filename} must be UTF-8 text") from exc
+
+
+def _submission_score(rank: int, count: int) -> float:
+    if count <= 1:
+        return 1.0
+    return max(0.0, min(1.0, 0.99 - ((rank - 1) * (0.98 / (count - 1)))))
+
+
+def _xlsx_from_rows(rows: list[list[str]]) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", _XLSX_CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _XLSX_RELS)
+        archive.writestr("xl/workbook.xml", _XLSX_WORKBOOK)
+        archive.writestr("xl/_rels/workbook.xml.rels", _XLSX_WORKBOOK_RELS)
+        archive.writestr("xl/styles.xml", _XLSX_STYLES)
+        archive.writestr("xl/worksheets/sheet1.xml", _xlsx_sheet(rows))
+    return buffer.getvalue()
+
+
+def _xlsx_sheet(rows: list[list[str]]) -> str:
+    row_xml: list[str] = []
+    for row_index, row in enumerate(rows, start=1):
+        style = ' s="1"' if row_index == 1 else ""
+        cells = []
+        for col_index, value in enumerate(row, start=1):
+            ref = f"{_column_name(col_index)}{row_index}"
+            if row_index > 1 and col_index in {2, 3}:
+                cells.append(f'<c r="{ref}" s="2"><v>{html.escape(str(value))}</v></c>')
+            else:
+                cells.append(f'<c r="{ref}" t="inlineStr"{style}><is><t>{html.escape(str(value))}</t></is></c>')
+        row_xml.append(f'<row r="{row_index}">{"".join(cells)}</row>')
+    dimension = f"A1:D{max(len(rows), 1)}"
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        f'<dimension ref="{dimension}"/>'
+        '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+        '<cols><col min="1" max="1" width="18" customWidth="1"/><col min="2" max="2" width="10" customWidth="1"/><col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="110" customWidth="1"/></cols>'
+        f'<sheetData>{"".join(row_xml)}</sheetData>'
+        f'<autoFilter ref="{dimension}"/>'
+        '</worksheet>'
+    )
+
+
+def _column_name(index: int) -> str:
+    name = ""
+    while index:
+        index, remainder = divmod(index - 1, 26)
+        name = chr(65 + remainder) + name
+    return name
+
+
+_XLSX_CONTENT_TYPES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>"""
+
+_XLSX_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"""
+
+_XLSX_WORKBOOK = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Submission" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"""
+
+_XLSX_WORKBOOK_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>"""
+
+_XLSX_STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>
+  <fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF10233F"/><bgColor indexed="64"/></patternFill></fill></fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="right"/></xf></cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>"""
 
 
 def _add_ai_semantic_comparison(comparison: dict, payload: dict) -> dict:

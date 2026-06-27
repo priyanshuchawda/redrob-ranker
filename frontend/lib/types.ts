@@ -124,6 +124,16 @@ export type RankingPayload = {
     runtime_seconds: number;
     job_supplied: boolean;
     ranking_uses_role_relevant_evidence_only: boolean;
+    input_pipeline?: {
+      candidate_file?: string;
+      candidate_file_type?: string;
+      candidate_records_loaded?: number;
+      job_source?: string;
+      top_n_requested?: number;
+      top_n_emitted?: number;
+      supported_candidate_inputs?: string[];
+      supported_job_inputs?: string[];
+    };
   };
   role_requirements: RoleRequirementMatrix;
   rankings: RankingRow[];

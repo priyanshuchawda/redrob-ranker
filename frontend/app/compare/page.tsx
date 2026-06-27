@@ -91,19 +91,6 @@ export default function ComparePage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <ListSection title="Where Candidate B is stronger" items={comparison.where_b_is_stronger} />
             <ListSection title="What the recruiter should verify" items={comparison.what_to_verify} />
-            {comparison.ai_semantic_comparison?.gemini_enabled && (
-              <section className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-5 shadow-panel lg:col-span-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Gemini assisted insight</p>
-                <h2 className="mt-1 text-base font-semibold text-ink">AI semantic comparison</h2>
-                <p className="mt-3 text-sm text-slate-700">{comparison.ai_semantic_comparison.summary}</p>
-                <div className="mt-4 grid gap-4 md:grid-cols-3">
-                  <ListInline title="Hidden strengths difference" items={comparison.ai_semantic_comparison.hidden_strengths_difference} />
-                  <ListInline title="Risk difference" items={comparison.ai_semantic_comparison.risk_difference} />
-                  <ListInline title="Interview checks" items={comparison.ai_semantic_comparison.interview_checks} />
-                </div>
-                <p className="mt-3 text-xs text-slate-500">Gemini did not generate the final ranking.</p>
-              </section>
-            )}
             <EvidenceDifferences comparison={comparison} />
             <section className="rounded-lg border border-line bg-white p-5 shadow-panel">
               <div className="flex items-center gap-2">
@@ -119,15 +106,6 @@ export default function ComparePage() {
         </div>
       )}
     </AppShell>
-  );
-}
-
-function ListInline({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
-      <p className="mt-2 text-sm text-slate-700">{items.length ? items.join("; ") : "Missing from supplied data"}</p>
-    </div>
   );
 }
 

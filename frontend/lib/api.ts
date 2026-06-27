@@ -21,6 +21,23 @@ export function demoRanking(): { payload: RankingPayload; source: "demo" } {
   return { payload: demoPayload, source: "demo" };
 }
 
+export async function rankJsonCandidates(request: {
+  job_text?: string;
+  candidates?: unknown[];
+  top_n: number;
+}): Promise<RankingPayload> {
+  const response = await fetch(`${API_BASE}/api/rank`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    cache: "no-store"
+  });
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, "Ranking failed"));
+  }
+  return response.json() as Promise<RankingPayload>;
+}
+
 export async function rankUploadedCandidates(formData: FormData): Promise<RankingPayload> {
   const response = await fetch(`${API_BASE}/api/rank/upload`, {
     method: "POST",
