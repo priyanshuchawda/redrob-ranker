@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileText, LoaderCircle, Play, Upload } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type DragEvent } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CandidateTable } from "@/components/CandidateTable";
 import { RoleRequirementMatrix } from "@/components/RoleRequirementMatrix";
@@ -11,8 +11,11 @@ import type { RankingPayload } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 const DEFAULT_JOB = "Senior AI Engineer\nMust have: Python, FastAPI, vector search, ranking, evaluation.";
+const JOB_EXTENSIONS = [".txt", ".md", ".docx"];
+const CANDIDATE_EXTENSIONS = [".csv", ".json", ".jsonl", ".ndjson", ".gz", ".jsonl.gz"];
 
 type Status = "ready" | "running" | "completed" | "fallback" | "demo";
+type DropTarget = "job" | "candidate";
 
 export default function RunRankingPage() {
   const [jobText, setJobText] = useState(DEFAULT_JOB);
@@ -23,6 +26,8 @@ export default function RunRankingPage() {
   const [payload, setPayload] = useState<RankingPayload | null>(null);
   const [status, setStatus] = useState<Status>("ready");
   const [failureDetail, setFailureDetail] = useState("");
+  const [inputNotice, setInputNotice] = useState("");
+  const [dragTarget, setDragTarget] = useState<DropTarget | null>(null);
 
   const inputMode = candidateFile ? "file" : candidateText.trim() ? "pasted" : "empty";
   const canRun = status !== "running" && inputMode !== "empty";
@@ -64,6 +69,59 @@ export default function RunRankingPage() {
     setStatus("demo");
   }
 
+  async function handleJobFile(file: File | null) {
+    setInputNotice("");
+    if (!file) {
+      setJobFile(null);
+      return;
+    }
+    if (!isAllowedFile(file, JOB_EXTENSIONS)) {
+      setInputNotice(`Unsupported job description file. Please use ${JOB_EXTENSIONS.join(", ")}.`);
+      return;
+    }
+    setJobFile(file);
+    if (file.name.toLowerCase().endsWith(".docx")) {
+      setJobText(`DOCX selected: ${file.name}. The backend will parse it during ranking.`);
+    } else {
+      setJobText(await file.text());
+    }
+  }
+
+  function handleCandidateFile(file: File | null) {
+    setInputNotice("");
+    if (!file) {
+      setCandidateFile(null);
+      return;
+    }
+    if (!isAllowedFile(file, CANDIDATE_EXTENSIONS)) {
+      setInputNotice(`Unsupported candidate file. Please use ${CANDIDATE_EXTENSIONS.join(", ")}.`);
+      return;
+    }
+    setCandidateFile(file);
+    setCandidateText("");
+  }
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>, target: DropTarget) {
+    event.preventDefault();
+    setDragTarget(null);
+    const file = event.dataTransfer.files?.[0] ?? null;
+    if (target === "job") {
+      void handleJobFile(file);
+    } else {
+      handleCandidateFile(file);
+    }
+  }
+
+  function handleDrag(event: DragEvent<HTMLLabelElement>, target: DropTarget) {
+    event.preventDefault();
+    setDragTarget(target);
+  }
+
+  function clearDrag(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setDragTarget(null);
+  }
+
   return (
     <AppShell>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -87,6 +145,13 @@ export default function RunRankingPage() {
             <p className="text-sm font-semibold">Live ranking failed. Showing demo fallback.</p>
             <p className="mt-1 text-xs text-red-700">{failureDetail}</p>
           </div>
+        </div>
+      )}
+
+      {inputNotice && (
+        <div role="alert" className="mb-5 flex items-start gap-3 rounded border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <AlertTriangle className="mt-0.5 shrink-0" size={19} aria-hidden="true" />
+          <p className="text-sm font-medium">{inputNotice}</p>
         </div>
       )}
 
@@ -114,22 +179,27 @@ export default function RunRankingPage() {
             }}
             className="mt-4 min-h-48 w-full rounded border border-line p-3 text-sm leading-6 focus-ring"
           />
-          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded border border-line px-3 py-2 text-sm font-medium text-slate-700 focus-ring hover:border-cobalt hover:text-cobalt">
-            <FileText size={16} aria-hidden="true" />
-            {jobFile ? "Replace JD file" : "Upload JD"}
+          <label
+            onDragEnter={(event) => handleDrag(event, "job")}
+            onDragOver={(event) => handleDrag(event, "job")}
+            onDragLeave={clearDrag}
+            onDrop={(event) => handleDrop(event, "job")}
+            className={`mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-dashed px-4 py-3 text-sm focus-ring transition ${
+              dragTarget === "job" ? "border-cobalt bg-cobalt/10 text-cobalt" : "border-line bg-slate-50 text-slate-700 hover:border-cobalt hover:bg-cobalt/5 hover:text-cobalt"
+            }`}
+          >
+            <span className="inline-flex items-center gap-2 font-medium">
+              <FileText size={17} aria-hidden="true" />
+              {jobFile ? "Replace JD file" : "Drag JD here or browse"}
+            </span>
+            <span className="text-xs text-slate-500">TXT, MD, DOCX</span>
             <input
               className="sr-only"
               type="file"
               accept=".txt,.md,.docx"
               onChange={async (event) => {
                 const file = event.target.files?.[0] ?? null;
-                setJobFile(file);
-                if (!file) return;
-                if (file.name.toLowerCase().endsWith(".docx")) {
-                  setJobText(`DOCX selected: ${file.name}. The backend will parse it during ranking.`);
-                } else {
-                  setJobText(await file.text());
-                }
+                await handleJobFile(file);
               }}
             />
           </label>
@@ -154,17 +224,27 @@ export default function RunRankingPage() {
             className="mt-4 min-h-48 w-full rounded border border-line p-3 text-sm leading-6 focus-ring"
           />
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded border border-line px-3 py-2 text-sm font-medium text-slate-700 focus-ring hover:border-cobalt hover:text-cobalt">
-              <Upload size={16} aria-hidden="true" />
-              {candidateFile ? "Replace candidate file" : "Upload candidate file"}
+            <label
+              onDragEnter={(event) => handleDrag(event, "candidate")}
+              onDragOver={(event) => handleDrag(event, "candidate")}
+              onDragLeave={clearDrag}
+              onDrop={(event) => handleDrop(event, "candidate")}
+              className={`flex min-w-80 flex-1 cursor-pointer items-center justify-between gap-3 rounded-lg border border-dashed px-4 py-3 text-sm focus-ring transition ${
+                dragTarget === "candidate" ? "border-teal bg-teal/10 text-teal" : "border-line bg-slate-50 text-slate-700 hover:border-cobalt hover:bg-cobalt/5 hover:text-cobalt"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2 font-medium">
+                <Upload size={17} aria-hidden="true" />
+                {candidateFile ? "Replace candidate file" : "Drag candidate file here or browse"}
+              </span>
+              <span className="text-xs text-slate-500">CSV, JSON, JSONL, NDJSON, GZ</span>
               <input
                 className="sr-only"
                 type="file"
                 accept=".csv,.json,.jsonl,.ndjson,.gz,.jsonl.gz"
                 onChange={(event) => {
                   const file = event.target.files?.[0] ?? null;
-                  setCandidateFile(file);
-                  if (file) setCandidateText("");
+                  handleCandidateFile(file);
                 }}
               />
             </label>
@@ -306,4 +386,9 @@ function parseCandidateText(text: string) {
   if (!trimmed) return undefined;
   if (trimmed.startsWith("[")) return JSON.parse(trimmed);
   return trimmed.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+}
+
+function isAllowedFile(file: File, extensions: string[]) {
+  const name = file.name.toLowerCase();
+  return extensions.some((extension) => name.endsWith(extension));
 }
