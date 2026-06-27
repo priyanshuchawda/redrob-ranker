@@ -21,7 +21,7 @@ from redrob_ranker.io import (  # noqa: E402
     write_submission,
 )
 from redrob_ranker.job_understanding import default_role_requirements, parse_job_description  # noqa: E402
-from redrob_ranker.scoring import rank_scored_candidates, score_candidates  # noqa: E402
+from redrob_ranker.scoring import rank_candidates_streaming, rank_scored_candidates, score_candidates  # noqa: E402
 from redrob_ranker.schema import load_candidate_records  # noqa: E402
 
 
@@ -57,19 +57,29 @@ def main() -> int:
         candidates = [record.to_scoring_dict() for record in records]
         data_quality_report = json.loads(quality_path.read_text(encoding="utf-8"))
     else:
-        candidates = list(iter_candidates(args.candidates))
+        candidates = iter_candidates(args.candidates)
 
     role_requirements = (
-        parse_job_description(Path(args.job).read_text(encoding="utf-8"))
+        parse_job_description(_read_job_description(args.job))
         if args.job
         else default_role_requirements()
     )
     role_for_scoring = role_requirements if args.job else None
-    scored = score_candidates(candidates, reference_date=args.reference_date, role_requirements=role_for_scoring)
-    if not product_mode and len(scored) < args.top_n:
-        parser.error(f"requested --top-n {args.top_n}, but only {len(scored)} candidates were loaded")
-    emit_top_n = min(args.top_n, len(scored)) if product_mode else args.top_n
-    ranked = rank_scored_candidates(scored, top_n=emit_top_n)
+    scored = []
+    if product_mode or args.debug_out or args.audit_out:
+        scored = score_candidates(candidates, reference_date=args.reference_date, role_requirements=role_for_scoring)
+        if not product_mode and len(scored) < args.top_n:
+            parser.error(f"requested --top-n {args.top_n}, but only {len(scored)} candidates were loaded")
+        emit_top_n = min(args.top_n, len(scored)) if product_mode else args.top_n
+        ranked = rank_scored_candidates(scored, top_n=emit_top_n)
+    else:
+        emit_top_n = args.top_n
+        ranked = rank_candidates_streaming(
+            candidates,
+            reference_date=args.reference_date,
+            top_n=emit_top_n,
+            role_requirements=role_for_scoring,
+        )
 
     if args.out:
         write_submission(ranked, args.out)
@@ -100,7 +110,8 @@ def main() -> int:
 
     elapsed = perf_counter() - started
     target = args.out or args.output or args.csv_out
-    print(f"Ranked {len(scored):,} candidates and wrote {len(ranked)} rows to {target} in {elapsed:.2f}s")
+    candidate_count = len(scored) if scored else "streamed"
+    print(f"Ranked {candidate_count} candidates and wrote {len(ranked)} rows to {target} in {elapsed:.2f}s")
     return 0
 
 
@@ -110,6 +121,31 @@ def _product_output_dir(args: argparse.Namespace) -> Path:
     if args.csv_out:
         return Path(args.csv_out).parent
     return Path("outputs")
+
+
+def _read_job_description(path: str | Path) -> str:
+    job_path = Path(path)
+    if job_path.suffix.lower() != ".docx":
+        return job_path.read_text(encoding="utf-8")
+    try:
+        from docx import Document
+    except ImportError as exc:
+        raise RuntimeError(
+            "Reading .docx job descriptions requires python-docx. "
+            "Install requirements.txt or provide a plain .txt job file."
+        ) from exc
+    doc = Document(str(job_path))
+    parts: list[str] = []
+    for paragraph in doc.paragraphs:
+        text = paragraph.text.strip()
+        if text:
+            parts.append(text)
+    for table in doc.tables:
+        for row in table.rows:
+            cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+            if cells:
+                parts.append(" | ".join(cells))
+    return "\n".join(parts)
 
 
 if __name__ == "__main__":

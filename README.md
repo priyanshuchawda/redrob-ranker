@@ -1,16 +1,18 @@
 # EvidenceGraph Ranker
 
-EvidenceGraph Ranker is a hybrid recruiting intelligence product. It keeps the original deterministic Redrob challenge CSV ranker and adds JD understanding, flexible ingestion, product JSON output, evidence ledgers, battle cards, candidate comparison, structured risk radar, responsible ranking documentation, a FastAPI backend, a Next.js Recruiter Intelligence Console, and an optional Gemini assisted insight layer.
+EvidenceGraph Ranker is a deterministic candidate-ranking system for the Redrob Intelligent Candidate Discovery challenge. It ranks the top candidates for the supplied Senior AI Engineer job description using profile evidence, career history, skills, behavioral signals, availability, location fit, and risk checks.
 
-## Why It Is Different
+The ranking step is CPU-only, local, repeatable, and does not call hosted APIs.
 
-Most hiring tools improve resume search. EvidenceGraph Ranker improves hiring judgment.
+## What the system does
 
-It ranks candidates by role fit, proof strength, confidence, hireability, and risk instead of raw resume keyword overlap. Claims such as "Python" in a skill list are separated from proof such as "shipped a production API using Python and FastAPI." Explanations are generated from candidate fields only, or marked unclear.
-
-Product line for judges:
-
-> Gemini Flash Lite provides AI assisted JD understanding and contextual relevance. EvidenceGraph keeps ranking grounded through deterministic scoring, evidence ledgers and risk validation.
+- Reads the official `candidates.jsonl` candidate pool.
+- Reads the supplied job description from `.docx` or `.txt`.
+- Extracts role-fit, retrieval/ranking/evaluation evidence, production proof, seniority, behavioral signals, and risk flags.
+- Penalizes keyword stuffing, weak proof, impossible skill claims, stale profiles, low response likelihood, and location/logistics blockers.
+- Produces a ranked top-100 submission with grounded 1-2 sentence reasoning.
+- Exports both the official CSV format and an XLSX version for portals that request spreadsheets.
+- Includes a FastAPI backend and Next.js recruiter console for local review.
 
 ## Setup
 
@@ -19,113 +21,65 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-## Optional Gemini Assisted Insight
+Frontend setup:
 
-Gemini is optional. The deterministic ranker remains the primary ranking backbone for auditability, repeatability and speed. Gemini only adds assistive JD insight, contextual relevance, hidden-gem reasoning, signal-fusion summaries and recruiter explanations. It does not silently overwrite `final_score`, rank order, evidence ledgers or risk validation.
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-Model:
+## Official ranking command
+
+From the repo root:
+
+```powershell
+python rank.py --job "D:\Users\pares\Desktop\[PUB] India_runs_data_and_ai_challenge\India_runs_data_and_ai_challenge\job_description.docx" --candidates "D:\Users\pares\Desktop\[PUB] India_runs_data_and_ai_challenge\India_runs_data_and_ai_challenge\candidates.jsonl" --out outputs\final_submission.csv --top-n 100
+```
+
+Validate the CSV:
+
+```powershell
+python "D:\Users\pares\Desktop\[PUB] India_runs_data_and_ai_challenge\India_runs_data_and_ai_challenge\validate_submission.py" outputs\final_submission.csv "D:\Users\pares\Desktop\[PUB] India_runs_data_and_ai_challenge\India_runs_data_and_ai_challenge\candidates.jsonl"
+```
+
+Create the XLSX upload file:
+
+```powershell
+python scripts\export_submission_xlsx.py --csv outputs\final_submission.csv --xlsx outputs\final_submission.xlsx
+```
+
+The current final XLSX artifact is included at:
 
 ```text
-gemini-3.1-flash-lite
+submission/redrob_ranked_output.xlsx
 ```
 
-SDK:
+## Output format
 
-```text
-google-genai
-```
-
-Environment variables:
-
-```powershell
-$env:GEMINI_API_KEY="your-key-here"
-$env:GEMINI_MODEL="gemini-3.1-flash-lite"
-$env:GEMINI_ENABLED="true"
-```
-
-Default safe mode:
-
-```powershell
-$env:GEMINI_ENABLED="false"
-```
-
-No secrets should be committed. The code reads the API key only from `GEMINI_API_KEY`. If Gemini is disabled, unavailable, missing an API key, or returns invalid JSON, EvidenceGraph returns deterministic fallback JSON with metadata:
-
-- `gemini_enabled`
-- `model_used`
-- `fallback_used`
-- `generated_at`
-
-Important wording:
-
-- Say “Gemini assisted insight”.
-- Do not say “Gemini generated the final ranking”.
-- Do not say “AI guarantees best candidate”.
-- Final ranking remains evidence weighted and auditable.
-
-## Old Challenge CSV Command
-
-This command is preserved:
-
-```powershell
-python rank.py --candidates candidates.jsonl --out submission.csv
-```
-
-Demo validation:
-
-```powershell
-python rank.py --candidates data/candidates.jsonl --out outputs/submission.csv --top-n 3
-python validate.py outputs/submission.csv --expected-rows 3
-```
-
-The legacy CSV still contains:
+The official CSV and XLSX both contain:
 
 ```text
 candidate_id,rank,score,reasoning
 ```
 
-## Product Ranking Command
+Rules enforced:
+
+- exactly 100 ranked rows;
+- ranks 1 through 100 appear once;
+- candidate IDs are unique;
+- scores are non-increasing by rank;
+- reasoning is candidate-specific and grounded in supplied fields.
+
+## Local product outputs
+
+For richer local inspection:
 
 ```powershell
-python rank.py --job data/job.txt --candidates data/candidates.jsonl --output outputs/ranked_candidates.json --csv-out outputs/ranked_candidates.csv --top-n 50 --audit
+python rank.py --job data\job.txt --candidates data\candidates.jsonl --output outputs\ranked_candidates.json --csv-out outputs\ranked_candidates.csv --top-n 50 --audit
 ```
 
-Generated product files include:
-
-- `outputs/ranked_candidates.json`
-- `outputs/ranked_candidates.csv`
-- `outputs/evidence_ledgers.json`
-- `outputs/data_quality_report.json`
-- `outputs/runtime_summary.json`
-- `outputs/top_candidates_audit.csv`
-
-## Battle Cards
-
-```powershell
-python battlecards.py --ranking outputs/ranked_candidates.json --output outputs/battlecards.md --top-n 10
-```
-
-## Candidate Comparison
-
-```powershell
-python compare.py --job data/job.txt --candidates data/candidates.jsonl --a CAND_DEMO_001 --b CAND_DEMO_002
-```
-
-## Evaluation
-
-Proxy evaluation without labels:
-
-```powershell
-python evaluate.py --ranking outputs/ranked_candidates.json --output outputs/evaluation_report.md --top-n 4
-```
-
-Real labeled evaluation requires labels:
-
-```powershell
-python evaluate.py --ranking outputs/ranked_candidates.json --labels data/labels.example.json --output outputs/evaluation_report.md --top-n 4
-```
-
-If labels are not supplied, reports are explicitly labeled synthetic/proxy and must not be read as real recruiter accuracy.
+This creates JSON/CSV outputs, evidence ledgers, runtime summary, data-quality report, and a top-candidate audit file under `outputs/`.
 
 ## Backend
 
@@ -133,10 +87,9 @@ If labels are not supplied, reports are explicitly labeled synthetic/proxy and m
 uvicorn api.main:app --reload
 ```
 
-Key endpoints:
+Useful endpoints:
 
 - `GET /api/health`
-- `GET /api/demo-data`
 - `POST /api/rank`
 - `GET /api/rank/latest`
 - `POST /api/rank/upload`
@@ -146,133 +99,66 @@ Key endpoints:
 - `POST /api/evaluate`
 - `GET /api/exports/ranked-json`
 - `GET /api/exports/ranked-csv`
-- `POST /api/ai/jd-insight`
-- `POST /api/ai/contextual-fit`
-- `POST /api/ai/recruiter-explanation`
-- `POST /api/ai/hidden-gems`
-- `POST /api/ai/signal-fusion-summary`
-
-Multipart ranking accepts a candidate file in JSONL, JSONL.GZ, JSON, or CSV format plus either `job_text` or an uploaded UTF-8 job file. The original JSON endpoint remains available.
 
 ## Frontend
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+The local recruiter console includes:
 
-Open `http://localhost:3000`.
+- dashboard;
+- run-ranking page;
+- ranked candidates table;
+- candidate detail page;
+- candidate comparison;
+- evaluation view;
+- trust audit;
+- export page.
 
-The Recruiter Intelligence Console uses Next.js, TypeScript, and Tailwind CSS. It includes dashboard, run ranking, candidates, candidate detail, compare, evaluation, and exports pages. Candidate comparison calls the backend comparison engine and renders score, evidence, risk, and recruiter-verification differences. When live ranking fails, bundled demo output remains available behind a visible degraded-mode warning.
+The UI is for inspection and explanation. The official submission artifact is produced by `rank.py`.
 
-## Judge Demo Proof
-
-Screenshots:
-
-- Add landing page screenshot here after running the local demo.
-- Add JD Requirement Matrix screenshot here after running the local demo.
-- Add Evidence Ledger screenshot here after running the local demo.
-- Add Trust Audit screenshot here after running the local demo.
-
-Demo video:
-
-- Add demo video link here after recording the local walkthrough.
-
-Two-minute path:
-
-1. Open `/dashboard` and show JD Understanding.
-2. Open `/run-ranking` and click `Use Demo Scenario` to show intentional demo mode.
-3. Run live ranking if the backend is available.
-4. Open the leaderboard and point to the `Review Tag` column.
-5. Open `CAND_DEMO_001` and show the full Evidence Ledger.
-6. Open Compare and compare `CAND_DEMO_001` with `CAND_DEMO_002`.
-7. Open Trust Audit and show proof, confidence, missing evidence, and risk counts.
-8. Open Exports and show generated JSON/CSV/battle-card assets.
-
-What is real:
-
-- Deterministic Python ranking engine.
-- JD requirement matrix extraction.
-- Product JSON and legacy CSV outputs.
-- Evidence ledgers, risk radar, review tags, comparison, trust audit, and benchmark script.
-- FastAPI backend and Next.js/Tailwind frontend.
-
-What is proxy:
-
-- Evaluation without labels is proxy only.
-- Demo scenario is intentional sample data, not recruiter accuracy.
-
-Architecture in one line:
-
-`candidate/job files -> deterministic Python engine -> evidence/risk/score payload -> FastAPI -> Recruiter Intelligence Console`.
-
-## Validation
+## Verification
 
 ```powershell
 python -m pytest -q
-python -c "from api.main import app; print(app.title)"
 cd frontend
 npm run build
 ```
 
-Current local verification:
+Verified locally:
 
-- `python -m pytest -q`: run before submission; current suite includes Gemini-disabled fallback and mocked Gemini tests.
-- Legacy CSV demo command: passed.
-- Local validator on demo CSV: passed.
-- Product ranking command: passed.
-- Battle card command: passed.
-- Comparison command: passed.
-- Proxy evaluation command: passed.
-- FastAPI import and test-client smoke check: passed.
-- Multipart JSONL ranking upload: passed.
-- Browser comparison and explicit fallback-warning checks: passed.
-- `frontend/npm run build`: passed.
+- Python tests pass.
+- Frontend production build passes.
+- Official dataset ranking creates 100 rows.
+- Official validator accepts the generated CSV.
+- XLSX export opens as a clean spreadsheet with the required columns.
 
 ## Architecture
 
-Core package modules:
-
-- `features.py`: deterministic evidence extraction.
-- `scoring.py`: calibrated scoring plus optional JD-aware adjustments.
-- `job_understanding.py`: deterministic JD requirement matrix extraction.
-- `schema.py`: flexible candidate ingestion and data quality reporting.
-- `evidence_ledger.py`: claim/proof evidence ledger.
-- `risk.py`: structured risk radar.
-- `reasoning.py`: grounded challenge and product explanations.
-- `comparison.py`: candidate A/B comparison.
-- `battlecards.py`: recruiter battle cards.
-- `evaluation.py`: labeled or proxy evaluation reporting.
-
-See `docs/architecture.md`, `docs/scoring_methodology.md`, `docs/evidence_graph.md`, `docs/responsible_ranking.md`, and `docs/evaluation.md`.
-
-## Limitations
-
-- JD requirement matrix extraction is deterministic and heuristic; Gemini assisted insight is optional and separate.
-- The frontend fallback data is demo-only; live product data comes from FastAPI.
-- Proxy evaluation is not real recruiter accuracy.
-- Multipart uploads are buffered in memory before deterministic parsing, so very large files need production hardening.
-- The ranking path remains CPU-only and deterministic by default.
-- The Trust Audit page summarizes the latest in-memory ranking payload; it is not persisted across backend restarts.
-- Browser demo mode is intentionally separate from degraded fallback.
-
-## Runtime Benchmark
-
-```powershell
-python scripts/benchmark_runtime.py --candidates data/candidates.jsonl --job data/job.txt --sizes 100 1000 10000 --output outputs/performance_report.md
+```text
+official dataset + job description
+        ↓
+schema ingestion and data-quality checks
+        ↓
+feature extraction from profile, skills, career history, and Redrob signals
+        ↓
+evidence-weighted scoring with risk penalties
+        ↓
+deterministic ranking and tie-breaks
+        ↓
+CSV/XLSX submission + local review UI
 ```
 
-Latest local benchmark using the external sample dataset path:
+Core modules:
 
-- 100 candidates: 0.314559s, 317.9 candidates/sec.
-- 1000 candidates: 3.027267s, 330.33 candidates/sec.
-- CPU only, no network calls, no paid API.
+- `src/redrob_ranker/schema.py` — flexible candidate ingestion.
+- `src/redrob_ranker/features.py` — role, proof, behavior, logistics, and risk feature extraction.
+- `src/redrob_ranker/scoring.py` — scoring, normalization, and deterministic ranking.
+- `src/redrob_ranker/reasoning.py` — grounded candidate reasoning.
+- `src/redrob_ranker/evidence_ledger.py` — proof/missing-evidence ledger.
+- `src/redrob_ranker/risk.py` — structured risk radar.
+- `src/redrob_ranker/comparison.py` — candidate A/B comparison.
 
-## Future Improvements
+## Notes
 
-- Add richer JD section parsing and configurable scoring profiles.
-- Add persistent run storage for API sessions.
-- Add streaming object storage and background processing for very large uploads.
-- Add visual diff exports for comparison reports.
-- Calibrate product score normalization on a larger labeled benchmark when real labels are available.
+- No manual edits are needed after running the ranking command.
+- The generated CSV is the challenge-spec artifact.
+- The XLSX export is provided only for upload forms that ask for a spreadsheet file.
