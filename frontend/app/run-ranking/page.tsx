@@ -193,7 +193,7 @@ export default function RunRankingPage() {
           {status === "running" ? "Ranking candidates" : "Run ranking pipeline"}
         </button>
         <button type="button" onClick={useDemoScenario} className="focus-ring inline-flex items-center gap-2 rounded border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink">
-          Use demo scenario
+          Use Demo Scenario
         </button>
       </div>
 
