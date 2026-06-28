@@ -269,7 +269,7 @@ def normalize_product_scores(components: ScoreComponents, features: CandidateFea
     )
     hireability_raw = max(components.availability, 0) + max(components.logistics, 0) + max(components.leadership, 0)
     risk_score = _clamp(components.risk * 2.0, 0.0, 100.0)
-    final_score = _clamp(components.total, 0.0, 100.0)
+    final_score = _clamp((components.total / 160.0) * 100.0, 0.0, 100.0)
     return ProductScores(
         final_score=round(final_score, 2),
         fit_score=round(_clamp(fit_raw / 95.0 * 100.0, 0.0, 100.0), 2),

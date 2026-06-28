@@ -202,7 +202,7 @@ class RankerService:
                 {
                     "candidate_id": row.get("candidate_id", ""),
                     "rank": row.get("rank", ""),
-                    "score": f"{_submission_score(int(row.get('rank') or 1), len(rows)):.4f}",
+                    "score": f"{_submission_score(row, rows):.4f}",
                     "reasoning": row.get("main_reason", ""),
                 }
             )
@@ -353,10 +353,13 @@ def _read_uploaded_job_text(filename: str, content: bytes) -> str:
         raise ValueError(f"Job file {filename} must be UTF-8 text") from exc
 
 
-def _submission_score(rank: int, count: int) -> float:
-    if count <= 1:
-        return 1.0
-    return max(0.0, min(1.0, 0.99 - ((rank - 1) * (0.98 / (count - 1)))))
+def _submission_score(row: dict[str, Any], rows: list[dict[str, Any]]) -> float:
+    raw_scores = [float((item.get("components") or {}).get("total") or 0.0) for item in rows]
+    top_score = max(raw_scores or [0.0])
+    row_score = float((row.get("components") or {}).get("total") or 0.0)
+    if top_score <= 0:
+        return 0.0
+    return max(0.0, min(0.99, (row_score / top_score) * 0.99))
 
 
 def _xlsx_from_rows(rows: list[list[str]]) -> bytes:
