@@ -87,12 +87,10 @@ def _submission_scores(rows: list[RankedCandidate]) -> list[float]:
         return []
     if max(row.score for row in rows) <= 1.0:
         return [row.score for row in rows]
-    if len(rows) == 1:
-        return [1.0]
-    return [
-        max(0.0, min(1.0, 0.99 - ((row.rank - 1) * (0.98 / (len(rows) - 1)))))
-        for row in rows
-    ]
+    top_score = max(row.score for row in rows)
+    if top_score <= 0:
+        return [0.0 for _row in rows]
+    return [max(0.0, min(0.99, (row.score / top_score) * 0.99)) for row in rows]
 
 
 def write_debug_scores(rows: Iterable[ScoredCandidate], output_path: str | Path) -> None:
